@@ -1,0 +1,42 @@
+# Build outputs
+**/target/
+**/build/
+**/out/
+*.class
+
+# Maven wrapper downloaded binaries
+**/.mvn/wrapper/maven-wrapper.jar
+
+# Logs and runtime files
+*.log
+*.tmp
+*.pid
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+application-local.properties
+application-local.yml
+
+# IDE and OS files
+.idea/
+.vscode/settings.json
+.vscode/.ropeproject/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Codex/local assistant workspace metadata
+.agents/
+.codex/
+
+# Keep the Spring Cloud Config repository separate.
+# It has its own Git history and remote repository.
+cloud-conf/
+
+# Local course/support files that should not be stored in the source repo
+*.aac
+INF462_TP_2026.pdf
+description_configuration_projet1.pdf
+Solution_Partie_B_Architecture_Microservices.docx
