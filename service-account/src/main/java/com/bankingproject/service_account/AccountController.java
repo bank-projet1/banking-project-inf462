@@ -1,50 +1,59 @@
 package com.bankingproject.service_account;
 
-import java.util.List;
-import java.util.Map;
+import com.bankingproject.service_account.entity.Account;
+import com.bankingproject.service_account.service.AccountService;
+import org.springframework.web.bind.annotation.*;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.env.Environment;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import java.util.List;
 
 @RestController
+@RequestMapping("/accounts")
 public class AccountController {
 
-	private final Environment environment;
+    private final AccountService accountService;
 
-	@Value("${bank.message:Configuration distante non chargee}")
-	private String message;
+    public AccountController(AccountService accountService) {
+        this.accountService = accountService;
+    }
 
-	@Value("${bank.currency:XAF}")
-	private String currency;
+    /**
+     * Créer un compte
+     */
+    @PostMapping
+    public Account createAccount(@RequestBody Account account) {
+        return accountService.create(account);
+    }
 
-	public AccountController(Environment environment) {
-		this.environment = environment;
-	}
+    /**
+     * Récupérer tous les comptes
+     */
+    @GetMapping
+    public List<Account> getAllAccounts() {
+        return accountService.getAll();
+    }
 
-	@GetMapping("/")
-	public Map<String, Object> home() {
-		return Map.of(
-				"service", "service-account",
-				"message", message,
-				"port", environment.getProperty("local.server.port"));
-	}
+    /**
+     * Récupérer un compte par ID
+     */
+    @GetMapping("/{id}")
+    public Account getAccountById(@PathVariable Long id) {
+        return accountService.getById(id)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
+    }
 
-	@GetMapping("/accounts")
-	public List<Map<String, Object>> accounts() {
-		return List.of(
-				Map.of("id", 1, "owner", "Alice", "balance", 150000, "currency", currency),
-				Map.of("id", 2, "owner", "Bob", "balance", 85000, "currency", currency));
-	}
+    /**
+     * Récupérer les comptes d'un client
+     */
+    @GetMapping("/customer/{customerId}")
+    public List<Account> getAccountsByCustomerId(@PathVariable Long customerId) {
+        return accountService.getByCustomerId(customerId);
+    }
 
-	@GetMapping("/config")
-	public Map<String, Object> config() {
-		return Map.of(
-				"applicationName", environment.getProperty("spring.application.name"),
-				"serverPort", environment.getProperty("server.port"),
-				"eurekaUrl", environment.getProperty("eureka.client.service-url.defaultZone"),
-				"message", message,
-				"currency", currency);
-	}
+    /**
+     * Supprimer un compte
+     */
+    @DeleteMapping("/{id}")
+    public void deleteAccount(@PathVariable Long id) {
+        accountService.delete(id);
+    }
 }
