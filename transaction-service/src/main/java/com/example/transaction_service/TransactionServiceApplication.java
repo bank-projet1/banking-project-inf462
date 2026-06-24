@@ -1,14 +1,13 @@
-package com.bankingproject.service_gateway;
+package com.example.transaction_service;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class ServiceGatewayApplication {
+public class TransactionServiceApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(ServiceGatewayApplication.class, args);
-	
-	
+		SpringApplication.run(TransactionServiceApplication.class, args);
 	}
+
 }
