@@ -1,0 +1,785 @@
+:root {
+  color-scheme: light;
+  --bg: #edf1f5;
+  --surface: #ffffff;
+  --surface-soft: #f7f9fc;
+  --ink: #172033;
+  --muted: #687386;
+  --line: #d8e0ea;
+  --accent: #176f5d;
+  --accent-strong: #0f5d4d;
+  --warning: #b26100;
+  --danger: #b42318;
+  --info: #245a9b;
+  --nav: #111827;
+  --shadow: 0 16px 40px rgba(23, 32, 51, 0.10);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.login-screen {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+  background:
+    linear-gradient(135deg, rgba(23, 111, 93, 0.12), transparent 34%),
+    linear-gradient(315deg, rgba(36, 90, 155, 0.12), transparent 32%),
+    var(--bg);
+}
+
+.login-panel {
+  display: grid;
+  width: min(460px, 100%);
+  gap: 22px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 28px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: var(--shadow);
+}
+
+.login-panel h1 {
+  margin: 0;
+  font-size: 2rem;
+  line-height: 1.05;
+}
+
+.muted-text {
+  margin: 10px 0 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.login-panel .login-brand span {
+  color: var(--muted);
+}
+
+.login-form {
+  display: grid;
+  gap: 14px;
+}
+
+.login-form label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 750;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 282px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px;
+  background: var(--nav);
+  color: #f8fafc;
+}
+
+.brand,
+.connection-panel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-mark {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 8px;
+  background: #e6f4ef;
+  color: var(--accent-strong);
+  font-weight: 850;
+}
+
+.brand strong,
+.connection-panel strong {
+  display: block;
+}
+
+.brand span,
+.connection-panel span {
+  display: block;
+  color: #aeb8c7;
+  font-size: 0.86rem;
+}
+
+.nav-tabs {
+  display: grid;
+  gap: 8px;
+}
+
+.nav-tab {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 42px;
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: transparent;
+  color: #cbd5e1;
+  text-align: left;
+}
+
+.nav-tab[hidden] {
+  display: none;
+}
+
+.nav-tab:hover,
+.nav-tab.active {
+  background: rgba(255, 255, 255, 0.10);
+  color: #ffffff;
+}
+
+.connection-panel {
+  margin-top: auto;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.user-panel {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.user-panel strong,
+.user-panel span {
+  overflow-wrap: anywhere;
+}
+
+.user-panel span {
+  color: #aeb8c7;
+  font-size: 0.82rem;
+}
+
+.user-panel .secondary-button {
+  width: 100%;
+  margin-top: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #f59e0b;
+}
+
+.status-dot.online {
+  background: #22c55e;
+}
+
+.status-dot.warning {
+  background: #f59e0b;
+}
+
+.status-dot.offline {
+  background: #ef4444;
+}
+
+.workspace {
+  min-width: 0;
+  padding: 28px;
+}
+
+.topbar,
+.panel-header,
+.toolbar,
+.dialog-header,
+.loan-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.topbar {
+  margin-bottom: 20px;
+}
+
+.topbar h1,
+.panel h2,
+dialog h2 {
+  margin: 0;
+  line-height: 1.1;
+}
+
+.topbar h1 {
+  font-size: clamp(1.6rem, 3vw, 2.35rem);
+}
+
+.panel h2,
+dialog h2 {
+  font-size: 1.05rem;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.topbar-actions,
+.loan-actions,
+.detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.primary-button,
+.secondary-button,
+.danger-button,
+.icon-button {
+  min-height: 40px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0 14px;
+  font-weight: 750;
+}
+
+.primary-button {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.primary-button:hover {
+  background: var(--accent-strong);
+}
+
+.secondary-button,
+.icon-button {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+.danger-button {
+  background: #fff1f0;
+  border-color: #ffd1cc;
+  color: var(--danger);
+}
+
+.icon-button {
+  width: 40px;
+  padding: 0;
+}
+
+.alert {
+  margin-bottom: 18px;
+  border: 1px solid #f8d4a5;
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: #fff8ed;
+  color: #7c3f00;
+}
+
+.alert[data-type="success"] {
+  border-color: #b9e8cb;
+  background: #effaf3;
+  color: #126044;
+}
+
+.hidden,
+.view {
+  display: none;
+}
+
+.view.active {
+  display: block;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.metric,
+.panel,
+.loan-card,
+.service-card,
+.service-detail,
+.account-card,
+dialog {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--shadow);
+}
+
+.metric {
+  min-height: 104px;
+  padding: 16px;
+}
+
+.metric span,
+.account-card span,
+.service-card span,
+.service-detail header span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.metric strong {
+  display: block;
+  margin-top: 14px;
+  font-size: 1.45rem;
+}
+
+.content-grid,
+.split-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+  gap: 16px;
+}
+
+.role-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.role-card {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-height: 220px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 18px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--shadow);
+}
+
+.role-card h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.role-card p:not(.eyebrow) {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.role-card button,
+.role-card .empty-state {
+  margin-top: auto;
+}
+
+.empty-state.compact {
+  padding: 14px;
+  text-align: left;
+}
+
+.panel {
+  padding: 18px;
+}
+
+.section-gap {
+  margin-top: 16px;
+}
+
+.toolbar {
+  margin-bottom: 14px;
+}
+
+.search-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(580px, 100%);
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 12px;
+  background: var(--surface);
+}
+
+.search-field input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+}
+
+select,
+input {
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 12px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.service-grid,
+.account-grid,
+.loan-list,
+.service-detail-list {
+  display: grid;
+  gap: 12px;
+}
+
+.service-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.service-card,
+.account-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px;
+  box-shadow: none;
+}
+
+.service-card strong,
+.service-card span,
+.account-card strong,
+.account-card span {
+  display: block;
+}
+
+.service-detail {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  box-shadow: none;
+}
+
+.service-detail header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.account-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.account-card {
+  align-items: flex-start;
+}
+
+.account-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 8px;
+  background: #e8f7ef;
+  color: var(--accent-strong);
+  font-weight: 850;
+}
+
+.loan-list.compact .loan-card {
+  box-shadow: none;
+}
+
+.loan-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  padding: 16px;
+}
+
+.loan-main {
+  min-width: 0;
+}
+
+.loan-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.loan-title strong {
+  font-size: 1rem;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border-radius: 999px;
+  padding: 0 9px;
+  background: #eef2f7;
+  color: #344054;
+  font-size: 0.74rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.badge.UP,
+.badge.APPROVED,
+.badge.ACTIVE {
+  background: #e8f7ef;
+  color: #126044;
+}
+
+.badge.DOWN,
+.badge.REJECTED {
+  background: #fff0ee;
+  color: #9d2419;
+}
+
+.badge.PENDING {
+  background: #fff4d6;
+  color: #7a4100;
+}
+
+.badge.UNDER_REVIEW {
+  background: #e8f1ff;
+  color: #164d8f;
+}
+
+.badge.PAID {
+  background: #edf8ff;
+  color: #0b5d78;
+}
+
+.loan-meta,
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.loan-meta span,
+.detail-grid span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.loan-meta strong,
+.detail-grid strong {
+  display: block;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+
+.form-panel {
+  max-width: 960px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.form-grid label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 750;
+}
+
+.wide {
+  grid-column: 1 / -1;
+}
+
+dialog {
+  width: min(900px, calc(100vw - 32px));
+  border: 0;
+  padding: 20px;
+}
+
+dialog::backdrop {
+  background: rgba(15, 23, 42, 0.48);
+}
+
+.dialog-body {
+  display: grid;
+  gap: 18px;
+}
+
+.detail-actions {
+  margin-top: 14px;
+}
+
+.repay-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.repay-form input {
+  width: 180px;
+}
+
+.table-wrap {
+  max-height: 330px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+table {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  border-bottom: 1px solid var(--line);
+  padding: 10px;
+  text-align: left;
+  font-size: 0.86rem;
+}
+
+th {
+  position: sticky;
+  top: 0;
+  background: var(--surface-soft);
+  color: var(--muted);
+}
+
+.empty-state {
+  border: 1px dashed #b8c3d1;
+  border-radius: 8px;
+  padding: 28px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--muted);
+  text-align: center;
+}
+
+@media (max-width: 1100px) {
+  .metric-grid,
+  .account-grid,
+  .role-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .content-grid,
+  .split-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 920px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: static;
+    height: auto;
+  }
+
+  .nav-tabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .nav-tab {
+    justify-content: center;
+  }
+
+  .connection-panel {
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 680px) {
+  .workspace,
+  .sidebar {
+    padding: 18px;
+  }
+
+  .topbar,
+  .toolbar,
+  .panel-header,
+  .loan-card,
+  .service-detail header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .loan-card {
+    display: flex;
+  }
+
+  .nav-tabs,
+  .metric-grid,
+  .service-grid,
+  .account-grid,
+  .role-grid,
+  .loan-meta,
+  .detail-grid,
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar-actions,
+  .loan-actions,
+  .primary-button,
+  .secondary-button,
+  .danger-button {
+    width: 100%;
+  }
+
+  .primary-button,
+  .secondary-button,
+  .danger-button {
+    justify-content: center;
+  }
+}
