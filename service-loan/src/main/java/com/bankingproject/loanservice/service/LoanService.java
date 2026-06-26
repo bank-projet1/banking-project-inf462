@@ -3,8 +3,9 @@ package com.bankingproject.loanservice.service;
 
 import com.bankingproject.loanservice.client.AccountClient;
 import com.bankingproject.loanservice.client.CustomerClient;
-import com.bankingproject.loanservice.client.LoanNotificationRequest;
 import com.bankingproject.loanservice.client.NotificationClient;
+import com.bankingproject.loanservice.client.NotificationRequest;
+import com.bankingproject.loanservice.client.TransactionClient;
 import com.bankingproject.loanservice.dto.LoanRequestDTO;
 import com.bankingproject.loanservice.dto.LoanScheduleEntryDTO;
 import com.bankingproject.loanservice.dto.RepaymentDTO;
@@ -16,6 +17,7 @@ import com.bankingproject.loanservice.model.LoanStatus;
 import com.bankingproject.loanservice.repository.LoanRepository;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,15 +29,18 @@ public class LoanService {
     private final AccountClient accountClient;
     private final CustomerClient customerClient;
     private final NotificationClient notificationClient;
+    private final TransactionClient transactionClient;
 
     public LoanService(LoanRepository repository,
                        AccountClient accountClient,
                        CustomerClient customerClient,
-                       NotificationClient notificationClient) {
+                       NotificationClient notificationClient,
+                       TransactionClient transactionClient) {
         this.repository = repository;
         this.accountClient = accountClient;
         this.customerClient = customerClient;
         this.notificationClient = notificationClient;
+        this.transactionClient = transactionClient;
     }
 
     public Loan createLoan(LoanRequestDTO dto) {
@@ -81,11 +86,13 @@ public class LoanService {
         if (loan.getStatus() != LoanStatus.UNDER_REVIEW) {
             throw new BadRequestException("Only UNDER_REVIEW loans can be approved.");
         }
+        transactionClient.deposit(loan.getAccountId(), BigDecimal.valueOf(loan.getAmount()));
         loan.setStatus(LoanStatus.APPROVED);
         loan.setStartDate(LocalDate.now());
         loan.setEndDate(loan.getStartDate().plusMonths(loan.getDurationMonths()));
         Loan saved = repository.save(loan);
-        notifyLoanEvent(saved, "APPROVED", "Your loan has been approved.");
+        notifyLoanEvent(saved, "APPROVED",
+                "Votre pret de " + saved.getAmount() + " a ete approuve et verse sur votre compte.");
         return saved;
     }
 
@@ -96,7 +103,7 @@ public class LoanService {
         }
         loan.setStatus(LoanStatus.REJECTED);
         Loan saved = repository.save(loan);
-        notifyLoanEvent(saved, "REJECTED", "Your loan request has been rejected.");
+        notifyLoanEvent(saved, "REJECTED", "Votre demande de pret a ete rejetee.");
         return saved;
     }
 
@@ -108,7 +115,11 @@ public class LoanService {
         if (loan.getRemainingAmount() == null || loan.getRemainingAmount() <= 0) {
             throw new BadRequestException("This loan is already paid.");
         }
+        if (dto.amount == null || dto.amount <= 0) {
+            throw new BadRequestException("Repayment amount must be greater than 0.");
+        }
 
+        transactionClient.withdrawal(loan.getAccountId(), BigDecimal.valueOf(dto.amount));
         double remaining = loan.getRemainingAmount() - dto.amount;
         loan.setTotalPaid(round(loan.getTotalPaid() + dto.amount));
         loan.setRemainingAmount(Math.max(0.0, round(remaining)));
@@ -118,7 +129,7 @@ public class LoanService {
             loan.setStatus(LoanStatus.ACTIVE);
         }
         Loan saved = repository.save(loan);
-        notifyLoanEvent(saved, "REPAYMENT", "A repayment was registered for your loan.");
+        notifyLoanEvent(saved, "REPAYMENT", "Un remboursement a ete enregistre sur votre pret.");
         return saved;
     }
 
@@ -141,13 +152,12 @@ public class LoanService {
 
     private void notifyLoanEvent(Loan loan, String event, String message) {
         try {
-            LoanNotificationRequest request = new LoanNotificationRequest();
-            request.setLoanId(loan.getId());
-            request.setCustomerId(loan.getCustomerId());
-            request.setAccountId(loan.getAccountId());
-            request.setEvent(event);
-            request.setMessage(message);
-            notificationClient.sendLoanNotification(request);
+            String fullMessage = message + " Pret #" + loan.getId() + ", compte #" + loan.getAccountId() + ".";
+            notificationClient.sendNotification(new NotificationRequest(
+                    loan.getCustomerId(),
+                    "LOAN_" + event,
+                    fullMessage,
+                    "SUCCESS"));
         } catch (ExternalServiceException ex) {
             // Notification failure should not block the core loan workflow.
             System.err.println("Notification service unavailable: " + ex.getMessage());

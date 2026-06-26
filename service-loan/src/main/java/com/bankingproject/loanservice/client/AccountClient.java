@@ -5,9 +5,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
-import java.util.Arrays;
-import java.util.Objects;
+import java.math.BigDecimal;
 
 @Component
 public class AccountClient {
@@ -23,16 +23,22 @@ public class AccountClient {
 
     public AccountDTO getAccountById(Long accountId) {
         try {
-            AccountDTO[] accounts = restTemplate.getForObject(accountServiceUrl + "/accounts", AccountDTO[].class);
-            if (accounts == null) {
-                return null;
-            }
-            return Arrays.stream(accounts)
-                    .filter(account -> Objects.equals(accountId, account.getId()))
-                    .findFirst()
-                    .orElse(null);
+            return restTemplate.getForObject(accountServiceUrl + "/accounts/{id}", AccountDTO.class, accountId);
         } catch (RestClientException ex) {
             throw new ExternalServiceException("Unable to reach service-account at " + accountServiceUrl, ex);
+        }
+    }
+
+    public void updateBalance(Long accountId, BigDecimal amount) {
+        String url = UriComponentsBuilder
+                .fromHttpUrl(accountServiceUrl + "/accounts/update-balance")
+                .queryParam("accountId", accountId)
+                .queryParam("amount", amount)
+                .toUriString();
+        try {
+            restTemplate.put(url, null);
+        } catch (RestClientException ex) {
+            throw new ExternalServiceException("Unable to update account balance at " + accountServiceUrl, ex);
         }
     }
 }

@@ -25,4 +25,12 @@ public class NotificationClient {
             throw new ExternalServiceException("Unable to reach notification-service at " + notificationServiceUrl, ex);
         }
     }
+
+    public void sendNotification(NotificationRequest request) {
+        try {
+            restTemplate.postForEntity(notificationServiceUrl + "/api/notifications", request, Void.class);
+        } catch (RestClientException ex) {
+            throw new ExternalServiceException("Unable to reach notification-service at " + notificationServiceUrl, ex);
+        }
+    }
 }
