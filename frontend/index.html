@@ -23,10 +23,21 @@
         </div>
         <section class="alert hidden" id="loginAlert" aria-live="polite"></section>
         <form class="login-form" id="loginForm">
-          <label>Email <input name="email" type="email" value="admin@bank.local" required /></label>
-          <label>Mot de passe <input name="password" type="password" value="password" required /></label>
+          <label>Email <input name="email" type="email" value="pervilledjimadoumbaye@gmail.com" required /></label>
+          <label>Mot de passe <input name="password" type="password" value="perville97" required /></label>
           <button class="primary-button" type="submit">Se connecter</button>
         </form>
+        <form class="login-form hidden" id="clientRegisterForm">
+          <label>Nom complet <input name="fullName" type="text" placeholder="Votre nom complet" required /></label>
+          <label>Email <input name="email" type="email" placeholder="client@email.com" required /></label>
+          <label>Mot de passe <input name="password" type="password" minlength="6" required /></label>
+          <input name="role" type="hidden" value="CLIENT" />
+          <button class="primary-button" type="submit">Creer mon compte client</button>
+        </form>
+        <div class="auth-switch">
+          <span id="authSwitchText">Pas encore de compte client ?</span>
+          <button class="secondary-button" id="toggleClientRegisterButton" type="button">S'inscrire</button>
+        </div>
       </div>
     </section>
 
@@ -46,8 +57,10 @@
           <button class="nav-tab" data-view="operator-home" data-roles="OPERATOR" type="button"><span aria-hidden="true">⌂</span> Accueil operateur</button>
           <button class="nav-tab" data-view="users" data-roles="ADMIN" type="button"><span aria-hidden="true">◉</span> Utilisateurs</button>
           <button class="nav-tab" data-view="accounts" data-roles="ADMIN,CLIENT,OPERATOR" type="button"><span aria-hidden="true">▤</span> Comptes</button>
+          <button class="nav-tab" data-view="transactions" data-roles="ADMIN,CLIENT,OPERATOR" type="button"><span aria-hidden="true">⇄</span> Transactions</button>
           <button class="nav-tab" data-view="loans" data-roles="ADMIN,CLIENT,OPERATOR" type="button"><span aria-hidden="true">≡</span> Credits</button>
           <button class="nav-tab" data-view="new-loan" data-roles="CLIENT" type="button"><span aria-hidden="true">＋</span> Demande pret</button>
+          <button class="nav-tab" data-view="notifications" data-roles="ADMIN,CLIENT,OPERATOR" type="button"><span aria-hidden="true">●</span> Notifications</button>
           <button class="nav-tab" data-view="services" data-roles="ADMIN" type="button"><span aria-hidden="true">◇</span> Services</button>
           <button class="nav-tab" data-view="settings" data-roles="ADMIN" type="button"><span aria-hidden="true">⚙</span> API</button>
         </nav>
@@ -123,7 +136,7 @@
               <p class="eyebrow">Suivi</p>
               <h2>Notifications</h2>
               <p>Retrouver les validations, echeances et alertes importantes.</p>
-              <div class="empty-state compact">Notifications a connecter au service dedie.</div>
+              <button class="secondary-button" data-jump="notifications" type="button">Voir notifications</button>
             </article>
           </div>
         </section>
@@ -141,7 +154,7 @@
               <p class="eyebrow">Support client</p>
               <h2>Transactions et comptes</h2>
               <p>Suivre les comptes clients et accompagner les operations sensibles.</p>
-              <button class="secondary-button" data-jump="accounts" type="button">Voir comptes</button>
+              <button class="secondary-button" data-jump="transactions" type="button">Voir transactions</button>
             </article>
             <article class="role-card">
               <p class="eyebrow">Documents</p>
@@ -188,15 +201,74 @@
         </section>
 
         <section class="view" id="accountsView" data-title="Comptes" data-eyebrow="Comptes financiers">
-          <section class="panel">
-            <div class="panel-header">
-              <div>
-                <p class="eyebrow">Service-account</p>
-                <h2>Comptes bancaires</h2>
+          <div class="split-grid">
+            <section class="panel form-panel">
+              <div class="panel-header">
+                <div>
+                  <p class="eyebrow">Creation</p>
+                  <h2>Nouveau compte bancaire</h2>
+                </div>
+                <button class="primary-button" form="accountForm" type="submit"><span aria-hidden="true">✓</span> Creer</button>
               </div>
-            </div>
-            <div class="account-grid" id="accountGrid"></div>
-          </section>
+              <form class="form-grid" id="accountForm">
+                <label>Client <input name="customerId" type="number" min="1" required /></label>
+                <label>Type
+                  <select name="accountType">
+                    <option value="CURRENT">Compte courant</option>
+                    <option value="SAVINGS">Epargne</option>
+                  </select>
+                </label>
+                <label>Solde initial <input name="balance" type="number" min="0" step="1" value="0" required /></label>
+                <label>Devise <input name="currency" type="text" value="XAF" required /></label>
+              </form>
+            </section>
+            <section class="panel">
+              <div class="panel-header">
+                <div>
+                  <p class="eyebrow">Service-account</p>
+                  <h2>Comptes bancaires</h2>
+                </div>
+              </div>
+              <div class="account-grid" id="accountGrid"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="transactionsView" data-title="Transactions" data-eyebrow="Operations financieres">
+          <div class="split-grid">
+            <section class="panel form-panel">
+              <div class="panel-header">
+                <div>
+                  <p class="eyebrow">Transaction-service</p>
+                  <h2>Nouvelle operation</h2>
+                </div>
+                <button class="primary-button" form="transactionForm" type="submit"><span aria-hidden="true">✓</span> Executer</button>
+              </div>
+              <form class="form-grid" id="transactionForm">
+                <label>Operation
+                  <select name="type">
+                    <option value="deposit">Depot</option>
+                    <option value="withdrawal">Retrait</option>
+                    <option value="transfer">Virement</option>
+                  </select>
+                </label>
+                <label>Compte source <select name="accountId" required></select></label>
+                <label class="destination-account-field hidden">Nom du beneficiaire <input name="receiverName" type="text" placeholder="Nom du client" autocomplete="off" /></label>
+                <div class="receiver-preview hidden" id="receiverAccountPreview">Compte receveur non selectionne.</div>
+                <label>Montant <input name="amount" type="number" min="1" step="1" value="10000" required /></label>
+              </form>
+            </section>
+            <section class="panel">
+              <div class="panel-header">
+                <div>
+                  <p class="eyebrow">Historique</p>
+                  <h2>Mouvements du compte</h2>
+                </div>
+                <select id="transactionAccountFilter" aria-label="Compte a consulter"></select>
+              </div>
+              <div class="transaction-list" id="transactionList"></div>
+            </section>
+          </div>
         </section>
 
         <section class="view" id="loansView" data-title="Credits" data-eyebrow="Gestion des prets">
@@ -218,6 +290,18 @@
           <div class="loan-list" id="loanList"></div>
         </section>
 
+        <section class="view" id="notificationsView" data-title="Notifications" data-eyebrow="Evenements utilisateur">
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Notification-service</p>
+                <h2>Alertes et messages</h2>
+              </div>
+            </div>
+            <div class="notification-list" id="notificationList"></div>
+          </section>
+        </section>
+
         <section class="view" id="new-loanView" data-title="Nouvelle demande" data-eyebrow="Credit client">
           <form class="panel form-panel" id="loanForm">
             <div class="panel-header">
@@ -228,9 +312,13 @@
               <button class="primary-button" type="submit"><span aria-hidden="true">✓</span> Envoyer</button>
             </div>
             <div class="form-grid">
-              <label>Client ID <input name="customerId" type="number" min="1" value="1" required /></label>
-              <label>Compte ID <input name="accountId" type="number" min="1" value="1" required /></label>
-              <label>Montant <input name="amount" type="number" min="1" step="1000" value="500000" required /></label>
+              <label>Client <input name="customerId" type="number" min="1" value="1" readonly required /></label>
+              <label>Compte
+                <select name="accountId" required>
+                  <option value="">Compte cree automatiquement si absent</option>
+                </select>
+              </label>
+              <label>Montant <input name="amount" type="number" min="1" step="1" value="500000" required /></label>
               <label>Taux annuel (%) <input name="interestRate" type="number" min="0" step="0.1" value="8.5" required /></label>
               <label>Duree (mois) <input name="durationMonths" type="number" min="1" value="24" required /></label>
             </div>

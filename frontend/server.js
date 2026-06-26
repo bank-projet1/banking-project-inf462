@@ -5,15 +5,17 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const preferredPort = Number(process.env.FRONTEND_PORT || 5173);
-const gatewayUrl = process.env.API_PROXY_TARGET || "http://localhost:8083";
+const gatewayUrl = process.env.API_PROXY_TARGET || "http://127.0.0.1:8083";
 
 const serviceTargets = {
-  config: process.env.CONFIG_SERVICE_URL || "http://localhost:8080",
-  registry: process.env.REGISTRY_SERVICE_URL || "http://localhost:8081",
-  account: process.env.ACCOUNT_SERVICE_URL || "http://localhost:8082",
+  config: process.env.CONFIG_SERVICE_URL || "http://127.0.0.1:8080",
+  registry: process.env.REGISTRY_SERVICE_URL || "http://127.0.0.1:8081",
+  account: process.env.ACCOUNT_SERVICE_URL || "http://127.0.0.1:8082",
   gateway: process.env.GATEWAY_SERVICE_URL || gatewayUrl,
-  auth: process.env.AUTH_SERVICE_URL || "http://localhost:8084",
-  loan: process.env.LOAN_SERVICE_URL || "http://localhost:8086"
+  auth: process.env.AUTH_SERVICE_URL || "http://127.0.0.1:8084",
+  transaction: process.env.TRANSACTION_SERVICE_URL || "http://127.0.0.1:8085",
+  loan: process.env.LOAN_SERVICE_URL || "http://127.0.0.1:8086",
+  notification: process.env.NOTIFICATION_SERVICE_URL || "http://127.0.0.1:8087"
 };
 
 const mimeTypes = {

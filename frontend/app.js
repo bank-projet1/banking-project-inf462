@@ -3,8 +3,10 @@ const SERVICES = [
   { key: "registry", name: "Service Registry", port: 8081, health: "/actuator/health", config: "/" },
   { key: "gateway", name: "Gateway", port: 8083, health: "/actuator/health", config: "/" },
   { key: "auth", name: "Auth Service", port: 8084, health: "/", config: "/config" },
-  { key: "account", name: "Account Service", port: 8082, health: "/", config: "/config" },
-  { key: "loan", name: "Loan Service", port: 8086, health: "/actuator/health", config: "/api/loans" }
+  { key: "account", name: "Account Service", port: 8082, health: "/actuator/health", config: "/accounts" },
+  { key: "transaction", name: "Transaction Service", port: 8085, health: "/actuator/health", config: "/api/transactions/history/0" },
+  { key: "loan", name: "Loan Service", port: 8086, health: "/actuator/health", config: "/api/loans" },
+  { key: "notification", name: "Notification Service", port: 8087, health: "/actuator/health", config: "/api/notifications" }
 ];
 
 const HOME_BY_ROLE = {
@@ -28,6 +30,8 @@ const state = {
   token: localStorage.getItem("banking-auth-token") || "",
   loans: [],
   accounts: [],
+  transactions: [],
+  notifications: [],
   users: [],
   services: [],
   selectedStatus: "ALL",
@@ -39,6 +43,9 @@ const els = {
   appShell: document.querySelector("#appShell"),
   loginAlert: document.querySelector("#loginAlert"),
   loginForm: document.querySelector("#loginForm"),
+  clientRegisterForm: document.querySelector("#clientRegisterForm"),
+  toggleClientRegisterButton: document.querySelector("#toggleClientRegisterButton"),
+  authSwitchText: document.querySelector("#authSwitchText"),
   pageTitle: document.querySelector("#pageTitle"),
   pageEyebrow: document.querySelector("#pageEyebrow"),
   alertBox: document.querySelector("#alertBox"),
@@ -53,6 +60,12 @@ const els = {
   operatorMetricGrid: document.querySelector("#operatorMetricGrid"),
   loanList: document.querySelector("#loanList"),
   accountGrid: document.querySelector("#accountGrid"),
+  accountForm: document.querySelector("#accountForm"),
+  transactionForm: document.querySelector("#transactionForm"),
+  transactionAccountFilter: document.querySelector("#transactionAccountFilter"),
+  transactionList: document.querySelector("#transactionList"),
+  receiverAccountPreview: document.querySelector("#receiverAccountPreview"),
+  notificationList: document.querySelector("#notificationList"),
   usersTable: document.querySelector("#usersTable"),
   serviceDetails: document.querySelector("#serviceDetails"),
   loanForm: document.querySelector("#loanForm"),
@@ -125,6 +138,44 @@ function serviceApi(serviceKey, path, options) {
   return request(`${state.serviceBase}/${serviceKey}`, path, options);
 }
 
+async function apiWithServiceFallback(gatewayPath, serviceKey, servicePath, options) {
+  try {
+    return await gatewayApi(gatewayPath, options);
+  } catch (gatewayError) {
+    try {
+      return await serviceApi(serviceKey, servicePath, options);
+    } catch (serviceError) {
+      throw new Error(`${gatewayError.message} / direct ${serviceKey}: ${serviceError.message}`);
+    }
+  }
+}
+
+function loanApi(path = "", options) {
+  const suffix = path.startsWith("/") ? path : `/${path}`;
+  const normalizedSuffix = suffix === "/" ? "" : suffix;
+  return apiWithServiceFallback(
+    `/loans${normalizedSuffix}`,
+    "loan",
+    `/api/loans${normalizedSuffix}`,
+    options
+  );
+}
+
+function transactionApi(path = "", options) {
+  const suffix = path.startsWith("/") ? path : `/${path}`;
+  return serviceApi("transaction", `/api/transactions${suffix === "/" ? "" : suffix}`, options);
+}
+
+function accountApi(path = "", options) {
+  const suffix = path.startsWith("/") ? path : `/${path}`;
+  return serviceApi("account", `/accounts${suffix === "/" ? "" : suffix}`, options);
+}
+
+function notificationApi(path = "", options) {
+  const suffix = path.startsWith("/") ? path : `/${path}`;
+  return serviceApi("notification", `/api/notifications${suffix === "/" ? "" : suffix}`, options);
+}
+
 async function settle(label, task) {
   try {
     return { ok: true, label, data: await task() };
@@ -147,6 +198,7 @@ function showAuthenticatedApp() {
   });
 
   setView(HOME_BY_ROLE[role] || "client-home");
+  syncAccountFormDefaults();
   syncLoanFormDefaults();
 }
 
@@ -161,14 +213,24 @@ function logout() {
   clearAlert(els.loginAlert);
 }
 
+function setAuthMode(mode) {
+  const registering = mode === "register";
+  els.loginForm.classList.toggle("hidden", registering);
+  els.clientRegisterForm.classList.toggle("hidden", !registering);
+  els.authSwitchText.textContent = registering ? "Vous avez deja un compte ?" : "Pas encore de compte client ?";
+  els.toggleClientRegisterButton.textContent = registering ? "Se connecter" : "S'inscrire";
+  clearAlert(els.loginAlert);
+}
+
 async function loadAll() {
   clearAlert();
   els.connectionDetail.textContent = `${state.apiBase} + ${state.serviceBase}`;
 
   const role = normalizeRole(state.currentUser?.role);
   const tasks = [
-    settle("credits", () => gatewayApi("/loans")),
-    settle("comptes", () => serviceApi("account", "/accounts"))
+    settle("credits", () => loanApi()),
+    settle("comptes", () => serviceApi("account", "/accounts")),
+    settle("notifications", () => role === "ADMIN" ? notificationApi() : notificationApi(`/user/${state.currentUser.id}`))
   ];
 
   if (role === "ADMIN") {
@@ -181,9 +243,13 @@ async function loadAll() {
 
   state.loans = Array.isArray(byLabel.credits?.data) ? byLabel.credits.data : [];
   state.accounts = Array.isArray(byLabel.comptes?.data) ? byLabel.comptes.data : [];
+  state.notifications = Array.isArray(byLabel.notifications?.data) ? byLabel.notifications.data : [];
   state.users = Array.isArray(byLabel.utilisateurs?.data) ? byLabel.utilisateurs.data : [];
   state.services = byLabel.services?.data || state.services;
+  await loadTransactionHistory();
   syncLoanFormDefaults();
+  syncAccountFormDefaults();
+  syncTransactionControls();
 
   const failures = results.filter((result) => !result.ok);
   els.statusDot.className = failures.length ? "status-dot warning" : "status-dot online";
@@ -240,7 +306,8 @@ function metricsHtml(metrics) {
 function renderRoleMetrics() {
   const totalAmount = state.loans.reduce((sum, loan) => sum + Number(loan.amount || 0), 0);
   const remaining = state.loans.reduce((sum, loan) => sum + Number(loan.remainingAmount || 0), 0);
-  const totalBalance = state.accounts.reduce((sum, account) => sum + Number(account.balance || 0), 0);
+  const visibleAccountList = visibleAccounts();
+  const totalBalance = visibleAccountList.reduce((sum, account) => sum + Number(account.balance || 0), 0);
   const pending = state.loans.filter((loan) => ["PENDING", "UNDER_REVIEW"].includes(loan.status)).length;
   const activeServices = state.services.filter((service) => service.status === "UP").length;
 
@@ -254,7 +321,7 @@ function renderRoleMetrics() {
   ]);
 
   els.clientMetricGrid.innerHTML = metricsHtml([
-    ["Mes comptes", number(state.accounts.length)],
+    ["Mes comptes", number(visibleAccountList.length)],
     ["Solde disponible", money(totalBalance)],
     ["Mes credits", number(state.loans.length)],
     ["Reste a payer", money(remaining)]
@@ -290,18 +357,53 @@ function renderServices() {
 }
 
 function renderAccounts() {
-  els.accountGrid.innerHTML = state.accounts.length
-    ? state.accounts.map((account) => `
+  const accounts = visibleAccounts();
+  els.accountGrid.innerHTML = accounts.length
+    ? accounts.map((account) => `
       <article class="account-card">
         <div class="account-icon" aria-hidden="true">▤</div>
         <div>
           <span>Compte #${account.id ?? "-"}</span>
-          <strong>${account.owner || "Titulaire inconnu"}</strong>
+          <strong>${account.owner || account.accountNumber || "Titulaire inconnu"}</strong>
+          <span>Client ${account.customerId ?? "-"}</span>
         </div>
         <strong>${money(account.balance, account.currency || "XAF")}</strong>
       </article>
     `).join("")
     : `<div class="empty-state">Aucun compte charge.</div>`;
+}
+
+function renderTransactions() {
+  if (!els.transactionList) return;
+
+  els.transactionList.innerHTML = state.transactions.length
+    ? state.transactions.map((transaction) => `
+      <article class="transaction-item">
+        <div>
+          <strong>${transactionLabel(transaction)}</strong>
+          <span>${transaction.timestamp ? new Date(transaction.timestamp).toLocaleString("fr-FR") : "Date indisponible"}</span>
+        </div>
+        <strong>${money(transaction.amount)}</strong>
+      </article>
+    `).join("")
+    : `<div class="empty-state">Aucune transaction chargee pour ce compte.</div>`;
+}
+
+function renderNotifications() {
+  if (!els.notificationList) return;
+
+  els.notificationList.innerHTML = state.notifications.length
+    ? state.notifications.map((notification) => `
+      <article class="notification-item">
+        <div>
+          <strong>${notification.type || "Notification"}</strong>
+          <p>${notification.message || "Message indisponible"}</p>
+          <span>${notification.createdAt ? new Date(notification.createdAt).toLocaleString("fr-FR") : ""}</span>
+        </div>
+        <span class="badge ${notification.status || ""}">${notification.status || "INFO"}</span>
+      </article>
+    `).join("")
+    : `<div class="empty-state">Aucune notification pour le moment.</div>`;
 }
 
 function renderUsers() {
@@ -382,8 +484,16 @@ function render() {
   renderRoleMetrics();
   renderServices();
   renderAccounts();
+  renderTransactions();
+  renderNotifications();
   renderUsers();
   renderLoans();
+}
+
+function transactionLabel(transaction) {
+  if (transaction.type === "DEPOSIT") return `Depot vers compte #${transaction.destinationAccountId ?? "-"}`;
+  if (transaction.type === "WITHDRAWAL") return `Retrait du compte #${transaction.sourceAccountId ?? "-"}`;
+  return `Virement #${transaction.sourceAccountId ?? "-"} vers #${transaction.destinationAccountId ?? "-"}`;
 }
 
 function syncLoanFormDefaults() {
@@ -391,15 +501,172 @@ function syncLoanFormDefaults() {
 
   const customerInput = els.loanForm.elements.customerId;
   const accountInput = els.loanForm.elements.accountId;
+  const role = normalizeRole(state.currentUser.role);
+  const clientAccounts = accountsForCurrentUser();
   if (customerInput) {
     customerInput.value = state.currentUser.id || customerInput.value || 1;
-    customerInput.readOnly = normalizeRole(state.currentUser.role) === "CLIENT";
+    customerInput.readOnly = role === "CLIENT";
   }
-  if (accountInput && state.accounts.length) {
+  if (accountInput?.tagName === "SELECT") {
+    const accounts = role === "CLIENT" ? clientAccounts : state.accounts;
+    accountInput.innerHTML = accounts.length
+      ? accounts.map((account) => `<option value="${account.id}">${accountLabel(account)}</option>`).join("")
+      : `<option value="">Compte cree automatiquement si absent</option>`;
+    accountInput.disabled = role === "CLIENT" && !accounts.length;
+  } else if (accountInput && state.accounts.length) {
     const accountIds = state.accounts.map((account) => String(account.id));
     if (!accountIds.includes(String(accountInput.value))) {
       accountInput.value = state.accounts[0].id;
     }
+  }
+}
+
+function accountsForCurrentUser() {
+  const userId = String(state.currentUser?.id ?? "");
+  return state.accounts.filter((account) => String(account.customerId ?? "") === userId);
+}
+
+function accountLabel(account) {
+  const numberLabel = account.accountNumber ? `Compte ${account.accountNumber}` : `Compte #${account.id}`;
+  return `${numberLabel} - ${money(account.balance, account.currency || "XAF")}`;
+}
+
+function syncAccountFormDefaults() {
+  if (!els.accountForm || !state.currentUser) return;
+
+  const role = normalizeRole(state.currentUser.role);
+  const customerInput = els.accountForm.elements.customerId;
+  if (customerInput) {
+    customerInput.value = role === "CLIENT" ? state.currentUser.id : customerInput.value || state.currentUser.id || 1;
+    customerInput.readOnly = role === "CLIENT";
+  }
+}
+
+async function ensureClientAccount() {
+  const existing = accountsForCurrentUser()[0];
+  if (existing) return existing;
+
+  const userId = state.currentUser?.id;
+  if (!userId) {
+    throw new Error("Utilisateur connecte introuvable.");
+  }
+
+  const account = await accountApi("", {
+    method: "POST",
+    body: JSON.stringify({
+      balance: 0,
+      customerId: userId,
+      status: "ACTIVE",
+      currency: "XAF",
+      accountType: "CURRENT"
+    })
+  });
+  state.accounts = [...state.accounts, account];
+  syncLoanFormDefaults();
+  renderAccounts();
+  return account;
+}
+
+function visibleAccounts() {
+  return normalizeRole(state.currentUser?.role) === "CLIENT" ? accountsForCurrentUser() : state.accounts;
+}
+
+function accountOptions(accounts, placeholder = "Aucun compte disponible") {
+  return accounts.length
+    ? accounts.map((account) => `<option value="${account.id}">${accountLabel(account)}</option>`).join("")
+    : `<option value="">${placeholder}</option>`;
+}
+
+function syncTransactionControls() {
+  if (!els.transactionForm) return;
+
+  const accounts = visibleAccounts();
+  const sourceInput = els.transactionForm.elements.accountId;
+  const receiverInput = els.transactionForm.elements.receiverName;
+  const filterInput = els.transactionAccountFilter;
+  const selectedSource = sourceInput?.value;
+  const selectedFilter = filterInput?.value;
+
+  if (sourceInput) {
+    sourceInput.innerHTML = accountOptions(accounts);
+    if (selectedSource && accounts.some((account) => String(account.id) === String(selectedSource))) {
+      sourceInput.value = selectedSource;
+    }
+    sourceInput.disabled = !accounts.length;
+  }
+  if (filterInput) {
+    filterInput.innerHTML = accountOptions(accounts, "Aucun compte a consulter");
+    if (selectedFilter && accounts.some((account) => String(account.id) === String(selectedFilter))) {
+      filterInput.value = selectedFilter;
+    }
+    filterInput.disabled = !accounts.length;
+  }
+  if (receiverInput && normalizeRole(state.currentUser?.role) === "CLIENT") {
+    receiverInput.placeholder = "Nom du beneficiaire";
+  }
+
+  syncTransactionMode();
+}
+
+function syncTransactionMode() {
+  if (!els.transactionForm) return;
+
+  const type = els.transactionForm.elements.type.value;
+  const destinationField = els.transactionForm.querySelector(".destination-account-field");
+  const receiverInput = els.transactionForm.elements.receiverName;
+  const isTransfer = type === "transfer";
+  destinationField?.classList.toggle("hidden", !isTransfer);
+  els.receiverAccountPreview?.classList.toggle("hidden", !isTransfer);
+  if (receiverInput) {
+    receiverInput.required = isTransfer;
+    receiverInput.disabled = !isTransfer;
+    if (!isTransfer) {
+      receiverInput.value = "";
+      setReceiverPreview("");
+    }
+  }
+}
+
+async function loadTransactionHistory() {
+  if (normalizeRole(state.currentUser?.role) === "ADMIN") {
+    const result = await settle("transactions", () => transactionApi());
+    state.transactions = result.ok && Array.isArray(result.data) ? result.data : [];
+    return;
+  }
+
+  const accountId = els.transactionAccountFilter?.value || visibleAccounts()[0]?.id;
+  if (!accountId) {
+    state.transactions = [];
+    return;
+  }
+
+  const result = await settle("transactions", () => transactionApi(`/history/${accountId}`));
+  state.transactions = result.ok && Array.isArray(result.data) ? result.data : [];
+}
+
+function setReceiverPreview(message, type = "info") {
+  if (!els.receiverAccountPreview) return;
+  els.receiverAccountPreview.textContent = message || "Compte receveur non selectionne.";
+  els.receiverAccountPreview.dataset.type = type;
+}
+
+async function resolveReceiverAccount() {
+  const receiverInput = els.transactionForm?.elements.receiverName;
+  const receiverName = receiverInput?.value?.trim();
+  if (!receiverName) {
+    setReceiverPreview("");
+    return null;
+  }
+
+  try {
+    const params = new URLSearchParams({ name: receiverName });
+    const account = await transactionApi(`/receiver/account?${params.toString()}`);
+    const numberLabel = account.accountNumber || `#${account.id}`;
+    setReceiverPreview(`Compte receveur: ${numberLabel} - Client ${account.customerId}`, "success");
+    return account;
+  } catch (error) {
+    setReceiverPreview(`Aucun compte actif trouve pour "${receiverName}".`, "warning");
+    return null;
   }
 }
 
@@ -415,7 +682,7 @@ async function performAction(action, id, body) {
   if (!config) return;
 
   try {
-    await gatewayApi(config.path, {
+    await loanApi(config.path.replace("/loans", ""), {
       method: config.method,
       body: body ? JSON.stringify(body) : undefined
     });
@@ -428,10 +695,10 @@ async function performAction(action, id, body) {
 
 async function openLoan(id) {
   try {
-    const loan = await gatewayApi(`/loans/${id}`);
+    const loan = await loanApi(`/${id}`);
     let schedule = [];
     try {
-      schedule = await gatewayApi(`/loans/${id}/schedule`);
+      schedule = await loanApi(`/${id}/schedule`);
     } catch {
       schedule = [];
     }
@@ -453,7 +720,7 @@ async function openLoan(id) {
           ${workflowButtons(loan)}
           ${["APPROVED", "ACTIVE"].includes(loan.status) ? `
             <form class="repay-form" data-repay-form data-id="${loan.id}">
-              <input name="amount" type="number" min="1" step="1000" placeholder="Montant" required />
+              <input name="amount" type="number" min="1" step="1" placeholder="Montant" required />
               <button class="primary-button" type="submit">Rembourser</button>
             </form>
           ` : ""}
@@ -537,6 +804,26 @@ els.statusFilter.addEventListener("change", (event) => {
   renderLoans();
 });
 
+els.transactionForm?.elements.type.addEventListener("change", syncTransactionMode);
+
+els.transactionForm?.elements.accountId.addEventListener("change", async () => {
+  syncTransactionControls();
+  await loadTransactionHistory();
+  renderTransactions();
+});
+
+els.transactionForm?.elements.receiverName?.addEventListener("input", () => {
+  clearTimeout(els.transactionForm.receiverLookupTimer);
+  els.transactionForm.receiverLookupTimer = setTimeout(resolveReceiverAccount, 350);
+});
+
+els.transactionForm?.elements.receiverName?.addEventListener("blur", resolveReceiverAccount);
+
+els.transactionAccountFilter?.addEventListener("change", async () => {
+  await loadTransactionHistory();
+  renderTransactions();
+});
+
 els.loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   clearAlert(els.loginAlert);
@@ -560,6 +847,29 @@ els.loginForm.addEventListener("submit", async (event) => {
   }
 });
 
+els.toggleClientRegisterButton.addEventListener("click", () => {
+  setAuthMode(els.clientRegisterForm.classList.contains("hidden") ? "register" : "login");
+});
+
+els.clientRegisterForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  clearAlert(els.loginAlert);
+  const form = event.currentTarget;
+  const payload = Object.fromEntries(new FormData(form).entries());
+  payload.role = "CLIENT";
+
+  try {
+    await serviceApi("auth", "/register", { method: "POST", body: JSON.stringify(payload), auth: false });
+    els.loginForm.elements.email.value = payload.email;
+    els.loginForm.elements.password.value = "";
+    form.reset();
+    setAuthMode("login");
+    showAlert("Compte cree avec succes. Connectez-vous avec votre mot de passe.", "success", els.loginAlert);
+  } catch (error) {
+    showAlert(error.message, "warning", els.loginAlert);
+  }
+});
+
 els.registerForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const payload = Object.fromEntries(new FormData(event.currentTarget).entries());
@@ -572,6 +882,28 @@ els.registerForm.addEventListener("submit", async (event) => {
   }
 });
 
+els.accountForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const formData = new FormData(form);
+  const payload = Object.fromEntries(formData.entries());
+  payload.customerId = Number(payload.customerId);
+  payload.balance = Number(payload.balance || 0);
+  payload.status = "ACTIVE";
+
+  try {
+    const account = await accountApi("", { method: "POST", body: JSON.stringify(payload) });
+    state.accounts = [...state.accounts, account];
+    syncAccountFormDefaults();
+    syncLoanFormDefaults();
+    syncTransactionControls();
+    render();
+    showAlert(`Compte bancaire cree: ${account.accountNumber || `#${account.id}`}.`, "success");
+  } catch (error) {
+    showAlert(error.message);
+  }
+});
+
 els.loanForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const form = event.currentTarget;
@@ -579,11 +911,54 @@ els.loanForm.addEventListener("submit", async (event) => {
   const payload = Object.fromEntries([...formData.entries()].map(([key, value]) => [key, Number(value)]));
 
   try {
-    await gatewayApi("/loans", { method: "POST", body: JSON.stringify(payload) });
+    if (normalizeRole(state.currentUser?.role) === "CLIENT") {
+      const account = await ensureClientAccount();
+      payload.customerId = Number(state.currentUser.id);
+      payload.accountId = Number(account.id);
+    }
+    await loanApi("", { method: "POST", body: JSON.stringify(payload) });
     form?.reset();
     await loadAll();
     syncLoanFormDefaults();
     setView("loans");
+  } catch (error) {
+    showAlert(error.message);
+  }
+});
+
+els.transactionForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const formData = new FormData(form);
+  const type = formData.get("type");
+  const amount = formData.get("amount");
+
+  try {
+    if (!formData.get("accountId")) {
+      throw new Error("Aucun compte disponible pour cette operation.");
+    }
+
+    const params = new URLSearchParams({ amount });
+    if (type === "transfer") {
+      const receiverName = String(formData.get("receiverName") || "").trim();
+      if (!receiverName) {
+        throw new Error("Saisissez le nom du beneficiaire.");
+      }
+      const receiverAccount = await resolveReceiverAccount();
+      if (!receiverAccount) {
+        throw new Error("Le receveur doit avoir un compte bancaire actif.");
+      }
+      params.set("sourceAccountId", formData.get("accountId"));
+      params.set("receiverName", receiverName);
+      await transactionApi(`/transfer/name?${params.toString()}`, { method: "POST" });
+    } else {
+      params.set("accountId", formData.get("accountId"));
+      await transactionApi(`/${type}?${params.toString()}`, { method: "POST" });
+    }
+
+    await loadAll();
+    showAlert("Transaction executee avec succes.", "success");
+    setView("transactions");
   } catch (error) {
     showAlert(error.message);
   }

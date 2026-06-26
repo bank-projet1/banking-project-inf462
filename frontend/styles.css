@@ -70,6 +70,20 @@ body {
   gap: 14px;
 }
 
+.auth-switch {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.auth-switch .secondary-button {
+  width: 100%;
+}
+
 .login-form label {
   display: grid;
   gap: 7px;
@@ -466,7 +480,9 @@ input {
 .service-grid,
 .account-grid,
 .loan-list,
-.service-detail-list {
+.service-detail-list,
+.transaction-list,
+.notification-list {
   display: grid;
   gap: 12px;
 }
@@ -511,6 +527,52 @@ input {
 
 .account-card {
   align-items: flex-start;
+}
+
+.transaction-item,
+.notification-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  background: var(--surface);
+}
+
+.transaction-item span,
+.notification-item span,
+.notification-item p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.notification-item p {
+  line-height: 1.45;
+}
+
+.receiver-preview {
+  align-self: end;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 11px 12px;
+  background: #f8fafc;
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 750;
+}
+
+.receiver-preview[data-type="success"] {
+  border-color: #b7e4c7;
+  background: #effaf3;
+  color: #17683a;
+}
+
+.receiver-preview[data-type="warning"] {
+  border-color: #fed7aa;
+  background: #fff7ed;
+  color: #9a3412;
 }
 
 .account-icon {

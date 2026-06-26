@@ -4,6 +4,7 @@ import com.bankingproject.service_account.service.AccountService;
 import com.bankingproject.service_account.entity.Account;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -33,11 +34,34 @@ public class AccountController {
                 .orElseThrow(() -> new RuntimeException("Account not found"));
     }
 
+    @GetMapping("/customer/{customerId}")
+    public List<Account> getAccountsByCustomer(@PathVariable Long customerId) {
+        return accountService.getByCustomerId(customerId);
+    }
+
+    @GetMapping("/customer/{customerId}/default")
+    public Account getDefaultAccountByCustomer(@PathVariable Long customerId) {
+        return accountService.getDefaultActiveAccount(customerId);
+    }
+
     @GetMapping("/{id}/balance")
     public Map<String, Object> getBalance(@PathVariable Long id) {
 
         Account account = accountService.getById(id)
                 .orElseThrow(() -> new RuntimeException("Account not found"));
+
+        return Map.of(
+                "accountId", account.getId(),
+                "balance", account.getBalance()
+        );
+    }
+
+    @PutMapping("/update-balance")
+    public Map<String, Object> updateBalance(
+            @RequestParam Long accountId,
+            @RequestParam BigDecimal amount) {
+
+        Account account = accountService.updateBalance(accountId, amount);
 
         return Map.of(
                 "accountId", account.getId(),

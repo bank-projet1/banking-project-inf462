@@ -1,6 +1,7 @@
 package com.bankingproject.auth_service.service;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -56,6 +57,25 @@ public class AuthService {
 
 	public List<UserResponse> findAllUsers() {
 		return userRepository.findAll().stream()
+				.map(this::toResponse)
+				.toList();
+	}
+
+	public Optional<UserResponse> findUserById(Long id) {
+		return userRepository.findById(id).map(this::toResponse);
+	}
+
+	public Optional<UserResponse> findFirstUserByName(String name) {
+		if (name == null || name.isBlank()) {
+			throw new IllegalArgumentException("Le nom du beneficiaire est obligatoire.");
+		}
+		return userRepository.findByFullNameContainingIgnoreCaseAndEnabledTrue(name.trim()).stream()
+				.findFirst()
+				.map(this::toResponse);
+	}
+
+	public List<UserResponse> findAdministrators() {
+		return userRepository.findByRoleAndEnabledTrue(UserRole.ADMIN).stream()
 				.map(this::toResponse)
 				.toList();
 	}
