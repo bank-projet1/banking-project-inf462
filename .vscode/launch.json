@@ -25,7 +25,8 @@
             "mainClass": "com.bankingproject.service_registry.ServiceRegistryApplication",
             "projectName": "service-registry",
             "args": "",
-            "envFile": "${workspaceFolder}/.env"
+            "envFile": "${workspaceFolder}/.env",
+            "vmArgs": " -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=38635 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Dspring.jmx.enabled=true -Djava.rmi.server.hostname=localhost -Dspring.application.admin.enabled=true -Dspring.boot.project.name=service-registry"
         },
         {
             "type": "java",
@@ -35,7 +36,8 @@
             "mainClass": "com.bankingproject.service_account.ServiceAccountApplication",
             "projectName": "service-account",
             "args": "",
-            "envFile": "${workspaceFolder}/.env"
+            "envFile": "${workspaceFolder}/.env",
+            "vmArgs": " -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=39131 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Dspring.jmx.enabled=true -Djava.rmi.server.hostname=localhost -Dspring.application.admin.enabled=true -Dspring.boot.project.name=service-account"
         },
         {
             "type": "java",
@@ -45,7 +47,8 @@
             "mainClass": "com.bankingproject.service_gateway.ServiceGatewayApplication",
             "projectName": "service-gateway",
             "args": "",
-            "envFile": "${workspaceFolder}/.env"
+            "envFile": "${workspaceFolder}/.env",
+            "vmArgs": " -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=35085 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Dspring.jmx.enabled=true -Djava.rmi.server.hostname=localhost -Dspring.application.admin.enabled=true -Dspring.boot.project.name=service-gateway"
         },
         {
             "type": "java",
@@ -54,6 +57,27 @@
             "cwd": "${workspaceFolder}",
             "mainClass": "com.bankingproject.auth_service.AuthServiceApplication",
             "projectName": "auth-service",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-ServiceCustomerApplication<service-customer>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.bankingproject.service_customer.ServiceCustomerApplication",
+            "projectName": "service-customer",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env",
+            "vmArgs": " -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=36429 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Dspring.jmx.enabled=true -Djava.rmi.server.hostname=localhost -Dspring.application.admin.enabled=true -Dspring.boot.project.name=service-customer"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-DocumentIntelligenceServiceApplication<document-intelligence-service>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.document.document_intelligence_service.DocumentIntelligenceServiceApplication",
+            "projectName": "document-intelligence-service",
             "args": "",
             "envFile": "${workspaceFolder}/.env"
         }
