@@ -28,11 +28,7 @@ public class NotificationService {
         } else {
             saved.setStatus("FAILED");
         }
-        Notification updated = repository.save(saved);
-        if (!result.sent() && !result.skipped()) {
-            throw new IllegalStateException(result.errorMessage());
-        }
-        return updated;
+        return repository.save(saved);
     }
 
     public List<Notification> getAllNotifications() {
