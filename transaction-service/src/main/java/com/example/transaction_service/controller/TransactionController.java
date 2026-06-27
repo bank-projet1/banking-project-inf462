@@ -60,4 +60,28 @@ public class TransactionController {
     public ResponseEntity<List<Transaction>> getHistory(@PathVariable Long accountId) {
         return ResponseEntity.ok(transactionService.getAccountHistory(accountId));
     }
+
+    @GetMapping
+    public ResponseEntity<List<Transaction>> getAllTransactions() {
+        return ResponseEntity.ok(transactionService.getAllTransactions());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Transaction> getTransactionById(@PathVariable Long id) {
+        return ResponseEntity.ok(transactionService.getTransactionById(id)
+                .orElseThrow(() -> new RuntimeException("Transaction not found")));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Transaction> updateTransaction(
+            @PathVariable Long id,
+            @RequestBody Transaction transaction) {
+        return ResponseEntity.ok(transactionService.updateTransaction(id, transaction));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteTransaction(@PathVariable Long id) {
+        transactionService.deleteTransaction(id);
+        return ResponseEntity.noContent().build();
+    }
 }

@@ -7,8 +7,11 @@ import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -61,6 +64,22 @@ public class AuthController {
 	@GetMapping("/users")
 	public List<UserResponse> users() {
 		return authService.findAllUsers();
+	}
+
+	@GetMapping("/users/{id}")
+	public UserResponse user(@PathVariable Long id) {
+		return authService.findUserById(id);
+	}
+
+	@PutMapping("/users/{id}")
+	public UserResponse updateUser(@PathVariable Long id, @RequestBody RegisterRequest request) {
+		return authService.updateUser(id, request);
+	}
+
+	@DeleteMapping("/users/{id}")
+	public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+		authService.deleteUser(id);
+		return ResponseEntity.noContent().build();
 	}
 
 	@ExceptionHandler(IllegalArgumentException.class)

@@ -60,6 +60,44 @@ public class AuthService {
 				.toList();
 	}
 
+	public UserResponse findUserById(Long id) {
+		return userRepository.findById(id)
+				.map(this::toResponse)
+				.orElseThrow(() -> new IllegalArgumentException("Utilisateur introuvable."));
+	}
+
+	@Transactional
+	public UserResponse updateUser(Long id, RegisterRequest request) {
+		AppUser user = userRepository.findById(id)
+				.orElseThrow(() -> new IllegalArgumentException("Utilisateur introuvable."));
+
+		userRepository.findByEmail(request.email())
+				.filter(existingUser -> !existingUser.getId().equals(id))
+				.ifPresent(existingUser -> {
+					throw new IllegalArgumentException("Un utilisateur existe deja avec cet email.");
+				});
+
+		user.setFullName(request.fullName());
+		user.setEmail(request.email());
+
+		if (request.password() != null && !request.password().isBlank()) {
+			user.setPassword(passwordEncoder.encode(request.password()));
+		}
+
+		user.setRole(request.role() == null ? user.getRole() : request.role());
+
+		return toResponse(userRepository.save(user));
+	}
+
+	@Transactional
+	public void deleteUser(Long id) {
+		if (!userRepository.existsById(id)) {
+			throw new IllegalArgumentException("Utilisateur introuvable.");
+		}
+
+		userRepository.deleteById(id);
+	}
+
 	private UserResponse toResponse(AppUser user) {
 		return new UserResponse(
 				user.getId(),
