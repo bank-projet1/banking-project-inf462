@@ -79,6 +79,13 @@ public class AuthController {
 				.orElseGet(() -> ResponseEntity.notFound().build());
 	}
 
+	@GetMapping("/users/phone")
+	public ResponseEntity<UserResponse> userByPhoneNumber(@RequestParam String phoneNumber) {
+		return authService.findUserByPhoneNumber(phoneNumber)
+				.map(ResponseEntity::ok)
+				.orElseGet(() -> ResponseEntity.notFound().build());
+	}
+
 	@GetMapping("/users/admins")
 	public List<UserResponse> administrators() {
 		return authService.findAdministrators();

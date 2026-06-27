@@ -19,6 +19,9 @@ public interface AccountClient {
     @GetMapping("/accounts/customer/{customerId}/default")
     AccountResponse getDefaultAccountByCustomer(@PathVariable("customerId") Long customerId);
 
+    @GetMapping("/accounts/phone/default")
+    AccountResponse getDefaultAccountByPhoneNumber(@RequestParam("phoneNumber") String phoneNumber);
+
     @PutMapping("/accounts/update-balance")
     Map<String, Object> updateBalance(
             @RequestParam("accountId") Long accountId, 

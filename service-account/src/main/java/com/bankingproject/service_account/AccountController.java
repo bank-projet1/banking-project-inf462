@@ -44,6 +44,11 @@ public class AccountController {
         return accountService.getDefaultActiveAccount(customerId);
     }
 
+    @GetMapping("/phone/default")
+    public Account getDefaultAccountByPhoneNumber(@RequestParam String phoneNumber) {
+        return accountService.getDefaultActiveAccountByPhoneNumber(phoneNumber);
+    }
+
     @GetMapping("/{id}/balance")
     public Map<String, Object> getBalance(@PathVariable Long id) {
 

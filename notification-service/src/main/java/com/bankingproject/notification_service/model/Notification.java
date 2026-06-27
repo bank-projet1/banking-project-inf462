@@ -32,6 +32,8 @@ public class Notification {
 
     private String status;
 
+    private String phoneNumber;
+
     private LocalDateTime createdAt;
 
     @PrePersist

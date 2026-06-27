@@ -30,6 +30,7 @@
         <form class="login-form hidden" id="clientRegisterForm">
           <label>Nom complet <input name="fullName" type="text" placeholder="Votre nom complet" required /></label>
           <label>Email <input name="email" type="email" placeholder="client@email.com" required /></label>
+          <label>Numero de telephone <input name="phoneNumber" type="tel" placeholder="+2376XXXXXXXX" autocomplete="tel" required /></label>
           <label>Mot de passe <input name="password" type="password" minlength="6" required /></label>
           <input name="role" type="hidden" value="CLIENT" />
           <button class="primary-button" type="submit">Creer mon compte client</button>
@@ -177,6 +178,7 @@
               <form class="form-grid" id="registerForm">
                 <label>Nom complet <input name="fullName" type="text" value="Nouveau client" required /></label>
                 <label>Email <input name="email" type="email" value="client@bank.local" required /></label>
+                <label>Numero de telephone <input name="phoneNumber" type="tel" value="+2376" required /></label>
                 <label>Mot de passe <input name="password" type="password" value="password" required /></label>
                 <label>Role
                   <select name="role">
@@ -212,6 +214,8 @@
               </div>
               <form class="form-grid" id="accountForm">
                 <label>Client <input name="customerId" type="number" min="1" required /></label>
+                <label>Nom du titulaire <input name="ownerName" type="text" placeholder="Nom complet du titulaire" required /></label>
+                <label>Numero de telephone <input name="phoneNumber" type="tel" placeholder="+2376XXXXXXXX" autocomplete="tel" required /></label>
                 <label>Type
                   <select name="accountType">
                     <option value="CURRENT">Compte courant</option>
@@ -253,7 +257,8 @@
                   </select>
                 </label>
                 <label>Compte source <select name="accountId" required></select></label>
-                <label class="destination-account-field hidden">Nom du beneficiaire <input name="receiverName" type="text" placeholder="Nom du client" autocomplete="off" /></label>
+                <label class="destination-account-field hidden">Numero du beneficiaire <input name="receiverPhoneNumber" type="tel" placeholder="+2376XXXXXXXX" autocomplete="tel" /></label>
+                <label class="receiver-name-field hidden">Nom du beneficiaire <input name="receiverOwnerName" type="text" readonly /></label>
                 <div class="receiver-preview hidden" id="receiverAccountPreview">Compte receveur non selectionne.</div>
                 <label>Montant <input name="amount" type="number" min="1" step="1" value="10000" required /></label>
               </form>

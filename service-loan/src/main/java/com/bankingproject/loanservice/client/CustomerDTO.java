@@ -5,6 +5,7 @@ public class CustomerDTO {
     private Long id;
     private String name;
     private String email;
+    private String phoneNumber;
 
     public Long getId() {
         return id;
@@ -28,5 +29,13 @@ public class CustomerDTO {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 }

@@ -629,18 +629,23 @@ input {
 
 .badge.UP,
 .badge.APPROVED,
-.badge.ACTIVE {
+.badge.ACTIVE,
+.badge.ACCEPTED,
+.badge.SENT,
+.badge.SUCCESS {
   background: #e8f7ef;
   color: #126044;
 }
 
 .badge.DOWN,
-.badge.REJECTED {
+.badge.REJECTED,
+.badge.FAILED {
   background: #fff0ee;
   color: #9d2419;
 }
 
-.badge.PENDING {
+.badge.PENDING,
+.badge.SKIPPED {
   background: #fff4d6;
   color: #7a4100;
 }

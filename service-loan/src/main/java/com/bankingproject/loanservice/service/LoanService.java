@@ -3,6 +3,7 @@ package com.bankingproject.loanservice.service;
 
 import com.bankingproject.loanservice.client.AccountClient;
 import com.bankingproject.loanservice.client.CustomerClient;
+import com.bankingproject.loanservice.client.CustomerDTO;
 import com.bankingproject.loanservice.client.NotificationClient;
 import com.bankingproject.loanservice.client.NotificationRequest;
 import com.bankingproject.loanservice.client.TransactionClient;
@@ -59,7 +60,9 @@ public class LoanService {
         loan.setTotalPaid(0.0);
         loan.setStatus(LoanStatus.PENDING);
         loan.setCreatedAt(LocalDate.now());
-        return repository.save(loan);
+        Loan saved = repository.save(loan);
+        notifyLoanEvent(saved, "REQUESTED", "Votre demande de pret de " + saved.getAmount() + " a ete enregistree.");
+        return saved;
     }
 
     public Loan getLoan(Long id) {
@@ -152,12 +155,14 @@ public class LoanService {
 
     private void notifyLoanEvent(Loan loan, String event, String message) {
         try {
+            CustomerDTO customer = customerClient.getCustomerById(loan.getCustomerId());
             String fullMessage = message + " Pret #" + loan.getId() + ", compte #" + loan.getAccountId() + ".";
             notificationClient.sendNotification(new NotificationRequest(
                     loan.getCustomerId(),
                     "LOAN_" + event,
                     fullMessage,
-                    "SUCCESS"));
+                    "SUCCESS",
+                    customer == null ? null : customer.getPhoneNumber()));
         } catch (ExternalServiceException ex) {
             // Notification failure should not block the core loan workflow.
             System.err.println("Notification service unavailable: " + ex.getMessage());

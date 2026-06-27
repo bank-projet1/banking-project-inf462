@@ -12,5 +12,9 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
 
     Optional<Account> findFirstByCustomerIdAndStatusOrderByIdAsc(Long customerId, String status);
 
+    Optional<Account> findFirstByPhoneNumberAndStatusOrderByIdAsc(String phoneNumber, String status);
+
     boolean existsByAccountNumber(String accountNumber);
+
+    boolean existsByPhoneNumber(String phoneNumber);
 }

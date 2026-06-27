@@ -3,6 +3,7 @@ package com.example.transaction_service.client;
 import com.example.transaction_service.dto.UserResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
@@ -12,6 +13,12 @@ public interface AuthClient {
 
     @GetMapping("/users/search")
     UserResponse findUserByName(@RequestParam("name") String name);
+
+    @GetMapping("/users/phone")
+    UserResponse findUserByPhoneNumber(@RequestParam("phoneNumber") String phoneNumber);
+
+    @GetMapping("/users/{id}")
+    UserResponse findUserById(@PathVariable("id") Long id);
 
     @GetMapping("/users/admins")
     List<UserResponse> findAdministrators();

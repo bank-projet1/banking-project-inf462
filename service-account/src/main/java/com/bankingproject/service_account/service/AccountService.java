@@ -22,6 +22,16 @@ public class AccountService {
         if (account.getCustomerId() == null) {
             throw new IllegalArgumentException("Customer ID is required");
         }
+        if (account.getOwnerName() == null || account.getOwnerName().isBlank()) {
+            throw new IllegalArgumentException("Owner name is required");
+        }
+        if (account.getPhoneNumber() == null || account.getPhoneNumber().isBlank()) {
+            throw new IllegalArgumentException("Phone number is required");
+        }
+        account.setPhoneNumber(account.getPhoneNumber().trim());
+        if (account.getId() == null && accountRepository.existsByPhoneNumber(account.getPhoneNumber())) {
+            throw new IllegalArgumentException("Phone number already linked to a bank account");
+        }
         if (account.getAccountNumber() == null || account.getAccountNumber().isBlank()) {
             account.setAccountNumber(generateAccountNumber());
         }
@@ -55,6 +65,14 @@ public class AccountService {
     public Account getDefaultActiveAccount(Long customerId) {
         return accountRepository.findFirstByCustomerIdAndStatusOrderByIdAsc(customerId, "ACTIVE")
                 .orElseThrow(() -> new RuntimeException("No active account found for customer " + customerId));
+    }
+
+    public Account getDefaultActiveAccountByPhoneNumber(String phoneNumber) {
+        if (phoneNumber == null || phoneNumber.isBlank()) {
+            throw new IllegalArgumentException("Phone number is required");
+        }
+        return accountRepository.findFirstByPhoneNumberAndStatusOrderByIdAsc(phoneNumber.trim(), "ACTIVE")
+                .orElseThrow(() -> new RuntimeException("No active account found for phone number " + phoneNumber));
     }
 
     public Account updateBalance(Long id, BigDecimal amount) {

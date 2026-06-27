@@ -12,9 +12,27 @@ import java.util.List;
 public class NotificationService {
 
     private final NotificationRepository repository;
+    private final AfricasTalkingSmsService africasTalkingSmsService;
 
     public Notification save(Notification notification) {
-        return repository.save(notification);
+        Notification saved = repository.save(notification);
+        if (!"SMS".equalsIgnoreCase(saved.getType())) {
+            return saved;
+        }
+
+        AfricasTalkingSmsService.SmsDeliveryResult result = africasTalkingSmsService.sendSms(saved.getPhoneNumber(), saved.getMessage());
+        if (result.sent()) {
+            saved.setStatus("ACCEPTED");
+        } else if (result.skipped()) {
+            saved.setStatus("SKIPPED");
+        } else {
+            saved.setStatus("FAILED");
+        }
+        Notification updated = repository.save(saved);
+        if (!result.sent() && !result.skipped()) {
+            throw new IllegalStateException(result.errorMessage());
+        }
+        return updated;
     }
 
     public List<Notification> getAllNotifications() {

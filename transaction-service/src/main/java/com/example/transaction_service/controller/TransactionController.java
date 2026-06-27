@@ -61,12 +61,12 @@ public class TransactionController {
         return ResponseEntity.ok(transactionService.transferToCustomer(sourceAccountId, receiverCustomerId, amount));
     }
 
-    @PostMapping("/transfer/name")
-    public ResponseEntity<Transaction> transferToCustomerName(
+    @PostMapping("/transfer/phone")
+    public ResponseEntity<Transaction> transferToCustomerPhoneNumber(
             @RequestParam Long sourceAccountId,
-            @RequestParam String receiverName,
+            @RequestParam String receiverPhoneNumber,
             @RequestParam BigDecimal amount) {
-        return ResponseEntity.ok(transactionService.transferToCustomerName(sourceAccountId, receiverName, amount));
+        return ResponseEntity.ok(transactionService.transferToCustomerPhoneNumber(sourceAccountId, receiverPhoneNumber, amount));
     }
 
     @GetMapping("/receiver/{customerId}/account")
@@ -75,8 +75,8 @@ public class TransactionController {
     }
 
     @GetMapping("/receiver/account")
-    public ResponseEntity<AccountResponse> getReceiverAccountByName(@RequestParam String name) {
-        return ResponseEntity.ok(transactionService.getDefaultAccountByCustomerName(name));
+    public ResponseEntity<AccountResponse> getReceiverAccountByPhoneNumber(@RequestParam String phoneNumber) {
+        return ResponseEntity.ok(transactionService.getDefaultAccountByCustomerPhoneNumber(phoneNumber));
     }
 
     /**

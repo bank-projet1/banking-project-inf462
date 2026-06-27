@@ -50,7 +50,8 @@ public class TransactionService {
         Transaction transaction = new Transaction(null, accountId, amount, TransactionType.DEPOSIT, LocalDateTime.now());
         Transaction savedTransaction = transactionRepository.save(transaction);
         notifyUser(account.getCustomerId(),
-                "Depot reussi de " + amount + " sur le compte " + safeAccountNumber(account) + ".");
+                "Depot reussi de " + amount + " sur le compte " + safeAccountNumber(account) + ".",
+                account.getPhoneNumber());
 
         return savedTransaction;
     }
@@ -66,7 +67,8 @@ public class TransactionService {
         Transaction transaction = new Transaction(accountId, null, amount, TransactionType.WITHDRAWAL, LocalDateTime.now());
         Transaction savedTransaction = transactionRepository.save(transaction);
         notifyUser(account.getCustomerId(),
-                "Retrait reussi de " + amount + " depuis le compte " + safeAccountNumber(account) + ".");
+                "Retrait reussi de " + amount + " depuis le compte " + safeAccountNumber(account) + ".",
+                account.getPhoneNumber());
 
         return savedTransaction;
     }
@@ -99,8 +101,8 @@ public class TransactionService {
     }
 
     @Transactional
-    public Transaction transferToCustomerName(Long sourceAccountId, String receiverName, BigDecimal amount) {
-        AccountResponse destinationAccount = getDefaultAccountByCustomerName(receiverName);
+    public Transaction transferToCustomerPhoneNumber(Long sourceAccountId, String receiverPhoneNumber, BigDecimal amount) {
+        AccountResponse destinationAccount = getDefaultAccountByCustomerPhoneNumber(receiverPhoneNumber);
         return transfer(sourceAccountId, destinationAccount.getId(), amount);
     }
 
@@ -116,15 +118,11 @@ public class TransactionService {
         return accountClient.getDefaultAccountByCustomer(customerId);
     }
 
-    public AccountResponse getDefaultAccountByCustomerName(String receiverName) {
-        if (receiverName == null || receiverName.isBlank()) {
-            throw new IllegalArgumentException("Receiver name is required");
+    public AccountResponse getDefaultAccountByCustomerPhoneNumber(String receiverPhoneNumber) {
+        if (receiverPhoneNumber == null || receiverPhoneNumber.isBlank()) {
+            throw new IllegalArgumentException("Receiver phone number is required");
         }
-        UserResponse receiver = authClient.findUserByName(receiverName.trim());
-        if (receiver == null || receiver.getId() == null) {
-            throw new IllegalArgumentException("Receiver not found");
-        }
-        return accountClient.getDefaultAccountByCustomer(receiver.getId());
+        return accountClient.getDefaultAccountByPhoneNumber(receiverPhoneNumber.trim());
     }
 
     private AccountResponse requireActiveAccount(Long accountId) {
@@ -154,21 +152,25 @@ public class TransactionService {
     private void notifyTransfer(AccountResponse sourceAccount, AccountResponse destinationAccount, BigDecimal amount) {
         String sourceNumber = safeAccountNumber(sourceAccount);
         String destinationNumber = safeAccountNumber(destinationAccount);
+        String sourcePhoneNumber = firstPresent(findUserPhoneNumber(sourceAccount.getCustomerId()), sourceAccount.getPhoneNumber());
+        String destinationPhoneNumber = firstPresent(destinationAccount.getPhoneNumber(), findUserPhoneNumber(destinationAccount.getCustomerId()));
         notifyUser(sourceAccount.getCustomerId(),
-                "Virement reussi de " + amount + " vers le compte " + destinationNumber + ".");
+                "Virement reussi de " + amount + " vers " + safeOwnerName(destinationAccount) + " (" + destinationNumber + ").",
+                sourcePhoneNumber);
         notifyUser(destinationAccount.getCustomerId(),
-                "Reception reussie de " + amount + " depuis le compte " + sourceNumber + ".");
+                "Reception reussie de " + amount + " depuis le compte " + sourceNumber + ".",
+                destinationPhoneNumber);
         notifyAdministrators("Audit transaction: virement de " + amount
                 + " du compte " + sourceNumber
                 + " vers le compte " + destinationNumber + ".");
     }
 
-    private void notifyUser(Long userId, String message) {
+    private void notifyUser(Long userId, String message, String phoneNumber) {
         if (userId == null) {
             return;
         }
         try {
-            notificationClient.createNotification(new NotificationRequest(userId, "TRANSACTION", message, "SUCCESS"));
+            notificationClient.createNotification(new NotificationRequest(userId, "SMS", message, "SUCCESS", phoneNumber));
         } catch (RuntimeException error) {
             log.warn("Notification could not be sent to user {}: {}", userId, error.getMessage());
         }
@@ -179,7 +181,7 @@ public class TransactionService {
             List<UserResponse> admins = authClient.findAdministrators();
             for (UserResponse admin : admins) {
                 if (admin.getId() != null) {
-                    notificationClient.createNotification(new NotificationRequest(admin.getId(), "AUDIT", message, "SUCCESS"));
+                    notificationClient.createNotification(new NotificationRequest(admin.getId(), "AUDIT", message, "SUCCESS", admin.getPhoneNumber()));
                 }
             }
         } catch (RuntimeException error) {
@@ -187,9 +189,29 @@ public class TransactionService {
         }
     }
 
+    private String findUserPhoneNumber(Long userId) {
+        try {
+            UserResponse user = authClient.findUserById(userId);
+            return user == null ? null : user.getPhoneNumber();
+        } catch (RuntimeException error) {
+            log.warn("Phone number could not be loaded for user {}: {}", userId, error.getMessage());
+            return null;
+        }
+    }
+
     private String safeAccountNumber(AccountResponse account) {
         return account.getAccountNumber() == null || account.getAccountNumber().isBlank()
                 ? "#" + account.getId()
                 : account.getAccountNumber();
+    }
+
+    private String safeOwnerName(AccountResponse account) {
+        return account.getOwnerName() == null || account.getOwnerName().isBlank()
+                ? "beneficiaire"
+                : account.getOwnerName();
+    }
+
+    private String firstPresent(String primary, String fallback) {
+        return primary == null || primary.isBlank() ? fallback : primary;
     }
 }

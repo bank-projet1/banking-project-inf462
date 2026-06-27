@@ -364,7 +364,8 @@ function renderAccounts() {
         <div class="account-icon" aria-hidden="true">▤</div>
         <div>
           <span>Compte #${account.id ?? "-"}</span>
-          <strong>${account.owner || account.accountNumber || "Titulaire inconnu"}</strong>
+          <strong>${account.ownerName || account.owner || account.accountNumber || "Titulaire inconnu"}</strong>
+          <span>${account.phoneNumber || "Telephone non renseigne"}</span>
           <span>Client ${account.customerId ?? "-"}</span>
         </div>
         <strong>${money(account.balance, account.currency || "XAF")}</strong>
@@ -414,13 +415,14 @@ function renderUsers() {
 
   els.usersTable.innerHTML = `
     <table>
-      <thead><tr><th>ID</th><th>Nom</th><th>Email</th><th>Role</th><th>Etat</th><th>Creation</th></tr></thead>
+      <thead><tr><th>ID</th><th>Nom</th><th>Email</th><th>Telephone</th><th>Role</th><th>Etat</th><th>Creation</th></tr></thead>
       <tbody>
         ${state.users.map((user) => `
           <tr>
             <td>${user.id ?? "-"}</td>
             <td>${user.fullName || "-"}</td>
             <td>${user.email || "-"}</td>
+            <td>${user.phoneNumber || "-"}</td>
             <td><span class="badge">${user.role || "-"}</span></td>
             <td>${user.enabled === false ? "Desactive" : "Actif"}</td>
             <td>${user.createdAt ? new Date(user.createdAt).toLocaleString("fr-FR") : "-"}</td>
@@ -528,7 +530,8 @@ function accountsForCurrentUser() {
 
 function accountLabel(account) {
   const numberLabel = account.accountNumber ? `Compte ${account.accountNumber}` : `Compte #${account.id}`;
-  return `${numberLabel} - ${money(account.balance, account.currency || "XAF")}`;
+  const ownerLabel = account.ownerName ? `${account.ownerName} - ` : "";
+  return `${ownerLabel}${numberLabel} - ${money(account.balance, account.currency || "XAF")}`;
 }
 
 function syncAccountFormDefaults() {
@@ -536,9 +539,17 @@ function syncAccountFormDefaults() {
 
   const role = normalizeRole(state.currentUser.role);
   const customerInput = els.accountForm.elements.customerId;
+  const ownerInput = els.accountForm.elements.ownerName;
+  const phoneInput = els.accountForm.elements.phoneNumber;
   if (customerInput) {
     customerInput.value = role === "CLIENT" ? state.currentUser.id : customerInput.value || state.currentUser.id || 1;
     customerInput.readOnly = role === "CLIENT";
+  }
+  if (ownerInput && role === "CLIENT") {
+    ownerInput.value = state.currentUser.fullName || ownerInput.value;
+  }
+  if (phoneInput && role === "CLIENT") {
+    phoneInput.value = state.currentUser.phoneNumber || phoneInput.value;
   }
 }
 
@@ -550,10 +561,15 @@ async function ensureClientAccount() {
   if (!userId) {
     throw new Error("Utilisateur connecte introuvable.");
   }
+  if (!state.currentUser?.phoneNumber) {
+    throw new Error("Creez d'abord un compte bancaire avec un numero de telephone.");
+  }
 
   const account = await accountApi("", {
     method: "POST",
     body: JSON.stringify({
+      ownerName: state.currentUser.fullName || "Client",
+      phoneNumber: state.currentUser.phoneNumber,
       balance: 0,
       customerId: userId,
       status: "ACTIVE",
@@ -582,7 +598,7 @@ function syncTransactionControls() {
 
   const accounts = visibleAccounts();
   const sourceInput = els.transactionForm.elements.accountId;
-  const receiverInput = els.transactionForm.elements.receiverName;
+  const receiverInput = els.transactionForm.elements.receiverPhoneNumber;
   const filterInput = els.transactionAccountFilter;
   const selectedSource = sourceInput?.value;
   const selectedFilter = filterInput?.value;
@@ -602,7 +618,7 @@ function syncTransactionControls() {
     filterInput.disabled = !accounts.length;
   }
   if (receiverInput && normalizeRole(state.currentUser?.role) === "CLIENT") {
-    receiverInput.placeholder = "Nom du beneficiaire";
+    receiverInput.placeholder = "+2376XXXXXXXX";
   }
 
   syncTransactionMode();
@@ -613,15 +629,19 @@ function syncTransactionMode() {
 
   const type = els.transactionForm.elements.type.value;
   const destinationField = els.transactionForm.querySelector(".destination-account-field");
-  const receiverInput = els.transactionForm.elements.receiverName;
+  const ownerField = els.transactionForm.querySelector(".receiver-name-field");
+  const receiverInput = els.transactionForm.elements.receiverPhoneNumber;
+  const ownerInput = els.transactionForm.elements.receiverOwnerName;
   const isTransfer = type === "transfer";
   destinationField?.classList.toggle("hidden", !isTransfer);
+  ownerField?.classList.toggle("hidden", !isTransfer);
   els.receiverAccountPreview?.classList.toggle("hidden", !isTransfer);
   if (receiverInput) {
     receiverInput.required = isTransfer;
     receiverInput.disabled = !isTransfer;
     if (!isTransfer) {
       receiverInput.value = "";
+      if (ownerInput) ownerInput.value = "";
       setReceiverPreview("");
     }
   }
@@ -651,21 +671,25 @@ function setReceiverPreview(message, type = "info") {
 }
 
 async function resolveReceiverAccount() {
-  const receiverInput = els.transactionForm?.elements.receiverName;
-  const receiverName = receiverInput?.value?.trim();
-  if (!receiverName) {
+  const receiverInput = els.transactionForm?.elements.receiverPhoneNumber;
+  const ownerInput = els.transactionForm?.elements.receiverOwnerName;
+  const receiverPhoneNumber = receiverInput?.value?.trim();
+  if (!receiverPhoneNumber) {
+    if (ownerInput) ownerInput.value = "";
     setReceiverPreview("");
     return null;
   }
 
   try {
-    const params = new URLSearchParams({ name: receiverName });
+    const params = new URLSearchParams({ phoneNumber: receiverPhoneNumber });
     const account = await transactionApi(`/receiver/account?${params.toString()}`);
     const numberLabel = account.accountNumber || `#${account.id}`;
-    setReceiverPreview(`Compte receveur: ${numberLabel} - Client ${account.customerId}`, "success");
+    if (ownerInput) ownerInput.value = account.ownerName || `Client ${account.customerId}`;
+    setReceiverPreview(`Compte receveur: ${numberLabel} - ${account.ownerName || `Client ${account.customerId}`}`, "success");
     return account;
   } catch (error) {
-    setReceiverPreview(`Aucun compte actif trouve pour "${receiverName}".`, "warning");
+    if (ownerInput) ownerInput.value = "";
+    setReceiverPreview(`Aucun compte actif trouve pour "${receiverPhoneNumber}".`, "warning");
     return null;
   }
 }
@@ -812,12 +836,12 @@ els.transactionForm?.elements.accountId.addEventListener("change", async () => {
   renderTransactions();
 });
 
-els.transactionForm?.elements.receiverName?.addEventListener("input", () => {
+els.transactionForm?.elements.receiverPhoneNumber?.addEventListener("input", () => {
   clearTimeout(els.transactionForm.receiverLookupTimer);
   els.transactionForm.receiverLookupTimer = setTimeout(resolveReceiverAccount, 350);
 });
 
-els.transactionForm?.elements.receiverName?.addEventListener("blur", resolveReceiverAccount);
+els.transactionForm?.elements.receiverPhoneNumber?.addEventListener("blur", resolveReceiverAccount);
 
 els.transactionAccountFilter?.addEventListener("change", async () => {
   await loadTransactionHistory();
@@ -836,6 +860,7 @@ els.loginForm.addEventListener("submit", async (event) => {
       id: result.userId,
       fullName: result.fullName,
       email: result.email,
+      phoneNumber: result.phoneNumber,
       role: normalizeRole(result.role)
     };
     localStorage.setItem("banking-auth-token", state.token);
@@ -940,17 +965,17 @@ els.transactionForm?.addEventListener("submit", async (event) => {
 
     const params = new URLSearchParams({ amount });
     if (type === "transfer") {
-      const receiverName = String(formData.get("receiverName") || "").trim();
-      if (!receiverName) {
-        throw new Error("Saisissez le nom du beneficiaire.");
+      const receiverPhoneNumber = String(formData.get("receiverPhoneNumber") || "").trim();
+      if (!receiverPhoneNumber) {
+        throw new Error("Saisissez le numero du beneficiaire.");
       }
       const receiverAccount = await resolveReceiverAccount();
       if (!receiverAccount) {
         throw new Error("Le receveur doit avoir un compte bancaire actif.");
       }
       params.set("sourceAccountId", formData.get("accountId"));
-      params.set("receiverName", receiverName);
-      await transactionApi(`/transfer/name?${params.toString()}`, { method: "POST" });
+      params.set("receiverPhoneNumber", receiverPhoneNumber);
+      await transactionApi(`/transfer/phone?${params.toString()}`, { method: "POST" });
     } else {
       params.set("accountId", formData.get("accountId"));
       await transactionApi(`/${type}?${params.toString()}`, { method: "POST" });

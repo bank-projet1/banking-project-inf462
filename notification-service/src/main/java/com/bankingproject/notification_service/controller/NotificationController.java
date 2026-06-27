@@ -24,6 +24,17 @@ public class NotificationController {
         return notificationService.save(notification);
     }
 
+    @PostMapping("/test-sms")
+    public Notification testSms(@RequestParam String phoneNumber) {
+        Notification notification = Notification.builder()
+                .type("SMS")
+                .message("Test SMS Banking Project: votre service de notification fonctionne.")
+                .status("PENDING")
+                .phoneNumber(phoneNumber)
+                .build();
+        return notificationService.save(notification);
+    }
+
     @GetMapping("/user/{userId}")
     public List<Notification> getNotificationsByUser(
             @PathVariable Long userId) {

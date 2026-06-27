@@ -37,6 +37,7 @@ public class AuthService {
 		AppUser user = new AppUser();
 		user.setFullName(request.fullName());
 		user.setEmail(request.email());
+		user.setPhoneNumber(request.phoneNumber());
 		user.setPassword(passwordEncoder.encode(request.password()));
 		user.setRole(request.role() == null ? UserRole.CLIENT : request.role());
 
@@ -52,7 +53,7 @@ public class AuthService {
 		}
 
 		String token = jwtService.generateToken(user);
-		return new AuthResponse(token, "Bearer", user.getId(), user.getFullName(), user.getEmail(), user.getRole().name());
+		return new AuthResponse(token, "Bearer", user.getId(), user.getFullName(), user.getEmail(), user.getPhoneNumber(), user.getRole().name());
 	}
 
 	public List<UserResponse> findAllUsers() {
@@ -74,6 +75,13 @@ public class AuthService {
 				.map(this::toResponse);
 	}
 
+	public Optional<UserResponse> findUserByPhoneNumber(String phoneNumber) {
+		if (phoneNumber == null || phoneNumber.isBlank()) {
+			throw new IllegalArgumentException("Le numero de telephone du beneficiaire est obligatoire.");
+		}
+		return userRepository.findByPhoneNumberAndEnabledTrue(phoneNumber.trim()).map(this::toResponse);
+	}
+
 	public List<UserResponse> findAdministrators() {
 		return userRepository.findByRoleAndEnabledTrue(UserRole.ADMIN).stream()
 				.map(this::toResponse)
@@ -85,6 +93,7 @@ public class AuthService {
 				user.getId(),
 				user.getFullName(),
 				user.getEmail(),
+				user.getPhoneNumber(),
 				user.getRole().name(),
 				user.isEnabled(),
 				user.getCreatedAt());

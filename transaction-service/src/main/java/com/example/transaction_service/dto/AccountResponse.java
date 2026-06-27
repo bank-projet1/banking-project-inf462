@@ -6,6 +6,8 @@ public class AccountResponse {
 
     private Long id;
     private String accountNumber;
+    private String ownerName;
+    private String phoneNumber;
     private BigDecimal balance;
     private Long customerId;
     private String status;
@@ -26,6 +28,22 @@ public class AccountResponse {
 
     public void setAccountNumber(String accountNumber) {
         this.accountNumber = accountNumber;
+    }
+
+    public String getOwnerName() {
+        return ownerName;
+    }
+
+    public void setOwnerName(String ownerName) {
+        this.ownerName = ownerName;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 
     public BigDecimal getBalance() {

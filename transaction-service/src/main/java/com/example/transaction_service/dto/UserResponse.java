@@ -5,6 +5,7 @@ public class UserResponse {
     private Long id;
     private String fullName;
     private String email;
+    private String phoneNumber;
     private String role;
     private boolean enabled;
 
@@ -30,6 +31,14 @@ public class UserResponse {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 
     public String getRole() {

@@ -12,6 +12,11 @@ public class Account {
 
     private String accountNumber;
 
+    private String ownerName;
+
+    @Column(unique = true)
+    private String phoneNumber;
+
     private Double balance;
 
     private Long customerId;
@@ -39,6 +44,22 @@ public class Account {
 
     public void setAccountNumber(String accountNumber) {
         this.accountNumber = accountNumber;
+    }
+
+    public String getOwnerName() {
+        return ownerName;
+    }
+
+    public void setOwnerName(String ownerName) {
+        this.ownerName = ownerName;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 
     public Double getBalance() {
