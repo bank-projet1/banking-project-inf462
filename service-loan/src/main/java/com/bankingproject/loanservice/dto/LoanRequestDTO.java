@@ -23,4 +23,6 @@ public class LoanRequestDTO {
     @NotNull
     @Positive
     public Integer durationMonths;
+
+    public String ocrResult;
 }

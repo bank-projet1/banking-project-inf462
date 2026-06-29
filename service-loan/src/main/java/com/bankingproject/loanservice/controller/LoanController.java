@@ -7,6 +7,7 @@ import com.bankingproject.loanservice.model.Loan;
 import com.bankingproject.loanservice.service.LoanService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/loans")
@@ -56,5 +57,12 @@ public class LoanController {
     @GetMapping("/{id}/schedule")
     public java.util.List<LoanScheduleEntryDTO> schedule(@PathVariable Long id) {
         return service.schedule(id);
+    }
+
+    @PostMapping("/{id}/documents/analyze")
+    public Loan analyzeDocument(@PathVariable Long id,
+                                @RequestParam(defaultValue = "LOAN_APPLICATION") String documentType,
+                                @RequestPart("file") MultipartFile file) {
+        return service.analyzeDocument(id, documentType, file);
     }
 }

@@ -1,37 +1,60 @@
-# Service de prêt
+# Service de pret
 
-# Créer une demande de prêt
-curl -X POST http://localhost:8084/api/loans \
+Port local: 8086
+
+## Flux metier attendu
+
+1. Le client cree une demande de pret.
+2. Le client ou l'operateur attache un document justificatif.
+3. `service-loan` appelle `service-ai` pour l'analyse OCR et la decision IA.
+4. Le dossier peut passer en revue uniquement si une analyse documentaire existe.
+5. L'operateur approuve ou rejette le pret.
+6. Si le pret est approuve, le service genere l'echeancier et accepte les remboursements.
+
+## Creer une demande de pret
+
+curl -X POST http://localhost:8086/api/loans \
   -H "Content-Type: application/json" \
-  -d '{"customerId":1,"accountId":10,"amount":5000,"interestRate":5,"durationMonths":12}'
+  -d '{"customerId":1,"accountId":10,"amount":500000,"interestRate":8.5,"durationMonths":24}'
 
-# Récupérer le prêt
-curl http://localhost:8084/api/loans/1
+## Analyser un document du dossier de pret
 
-# Passer en revue
-curl -X PUT http://localhost:8084/api/loans/1/review
+curl -X POST http://localhost:8086/api/loans/1/documents/analyze \
+  -F "documentType=SALARY" \
+  -F "file=@/chemin/vers/bulletin.png"
 
-# Approuver
-curl -X PUT http://localhost:8084/api/loans/1/approve
+Types utiles: CNI, PASSPORT, DOMICILE, SALARY, BANK_STATEMENT, CONTRACT, ADMIN, LOAN_APPLICATION.
 
-# Rejeter
-curl -X PUT http://localhost:8084/api/loans/1/reject
+## Passer le dossier en revue
 
-# Voir l'échéancier
-curl http://localhost:8084/api/loans/1/schedule
+curl -X PUT http://localhost:8086/api/loans/1/review
 
-# Rembourser
-curl -X POST http://localhost:8084/api/loans/1/repay \
+Cette etape exige une analyse OCR deja enregistree sur le pret.
+
+## Approuver ou rejeter
+
+curl -X PUT http://localhost:8086/api/loans/1/approve
+curl -X PUT http://localhost:8086/api/loans/1/reject
+
+Un dossier dont la decision IA vaut REJECTED ne peut pas etre approuve.
+
+## Echeancier de remboursement
+
+curl http://localhost:8086/api/loans/1/schedule
+
+## Rembourser
+
+curl -X POST http://localhost:8086/api/loans/1/repay \
   -H "Content-Type: application/json" \
-  -d '{"amount":416.67}'
+  -d '{"amount":25000}'
 
-# Loan inexistant → doit retourner 404 maintenant
-curl http://localhost:8084/api/loans/999
+## Communication inter-services
 
-# Communication inter-services
-- `service-loan` vérifie `service-account` et `service-customer` lors de la création de prêt
-- `service-loan` envoie une notification à `notification-service` à chaque événement important (review, approval, rejection, repayment)
+- `service-loan` verifie `service-account` et `service-customer` lors de la creation de pret.
+- `service-loan` appelle `service-ai` pour l'extraction OCR, le score documentaire et la decision IA.
+- `service-loan` appelle `transaction-service` pour le versement du pret et les remboursements.
+- `service-loan` envoie des notifications a `notification-service`.
 
-# Builder + déploiement
+## Build
+
 mvn clean package -DskipTests
-docker-compose up --build

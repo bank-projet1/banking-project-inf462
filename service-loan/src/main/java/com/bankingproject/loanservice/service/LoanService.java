@@ -4,9 +4,11 @@ package com.bankingproject.loanservice.service;
 import com.bankingproject.loanservice.client.AccountClient;
 import com.bankingproject.loanservice.client.CustomerClient;
 import com.bankingproject.loanservice.client.CustomerDTO;
+import com.bankingproject.loanservice.client.DocumentIntelligenceClient;
 import com.bankingproject.loanservice.client.NotificationClient;
 import com.bankingproject.loanservice.client.NotificationRequest;
 import com.bankingproject.loanservice.client.TransactionClient;
+import com.bankingproject.loanservice.dto.DocumentAnalysisDTO;
 import com.bankingproject.loanservice.dto.LoanRequestDTO;
 import com.bankingproject.loanservice.dto.LoanScheduleEntryDTO;
 import com.bankingproject.loanservice.dto.RepaymentDTO;
@@ -20,8 +22,13 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class LoanService {
@@ -31,17 +38,23 @@ public class LoanService {
     private final CustomerClient customerClient;
     private final NotificationClient notificationClient;
     private final TransactionClient transactionClient;
+    private final DocumentIntelligenceClient documentIntelligenceClient;
+    private final ObjectMapper objectMapper;
 
     public LoanService(LoanRepository repository,
                        AccountClient accountClient,
                        CustomerClient customerClient,
                        NotificationClient notificationClient,
-                       TransactionClient transactionClient) {
+                       TransactionClient transactionClient,
+                       DocumentIntelligenceClient documentIntelligenceClient,
+                       ObjectMapper objectMapper) {
         this.repository = repository;
         this.accountClient = accountClient;
         this.customerClient = customerClient;
         this.notificationClient = notificationClient;
         this.transactionClient = transactionClient;
+        this.documentIntelligenceClient = documentIntelligenceClient;
+        this.objectMapper = objectMapper;
     }
 
     public Loan createLoan(LoanRequestDTO dto) {
@@ -60,6 +73,7 @@ public class LoanService {
         loan.setTotalPaid(0.0);
         loan.setStatus(LoanStatus.PENDING);
         loan.setCreatedAt(LocalDate.now());
+        loan.setOcrResult(normalizeOcrResult(dto.ocrResult));
         Loan saved = repository.save(loan);
         notifyLoanEvent(saved, "REQUESTED", "Votre demande de pret de " + saved.getAmount() + " a ete enregistree.");
         return saved;
@@ -79,6 +93,7 @@ public class LoanService {
         if (loan.getStatus() != LoanStatus.PENDING) {
             throw new BadRequestException("Only PENDING loans can be moved to UNDER_REVIEW.");
         }
+        requireDocumentAnalysis(loan);
         loan.setStatus(LoanStatus.UNDER_REVIEW);
         notifyLoanEvent(loan, "REVIEW_REQUESTED", "Loan is under review.");
         return repository.save(loan);
@@ -89,6 +104,7 @@ public class LoanService {
         if (loan.getStatus() != LoanStatus.UNDER_REVIEW) {
             throw new BadRequestException("Only UNDER_REVIEW loans can be approved.");
         }
+        validateAiDecisionBeforeApproval(loan);
         transactionClient.deposit(loan.getAccountId(), BigDecimal.valueOf(loan.getAmount()));
         loan.setStatus(LoanStatus.APPROVED);
         loan.setStartDate(LocalDate.now());
@@ -139,6 +155,33 @@ public class LoanService {
     public List<LoanScheduleEntryDTO> schedule(Long id) {
         Loan loan = getLoan(id);
         return buildSchedule(loan);
+    }
+
+    public Loan analyzeDocument(Long id, String documentType, MultipartFile file) {
+        Loan loan = getLoan(id);
+        if (file == null || file.isEmpty()) {
+            throw new BadRequestException("A loan document file is required.");
+        }
+        if (loan.getStatus() != LoanStatus.PENDING && loan.getStatus() != LoanStatus.UNDER_REVIEW) {
+            throw new BadRequestException("Documents can be analyzed only before loan approval or rejection.");
+        }
+
+        String normalizedDocumentType = normalizeDocumentType(documentType);
+        DocumentAnalysisDTO analysis = documentIntelligenceClient.analyze(normalizedDocumentType, file);
+        if (analysis == null) {
+            throw new ExternalServiceException("service-ai returned an empty analysis.", null);
+        }
+
+        loan.setDocumentType(analysis.documentType == null ? normalizedDocumentType : analysis.documentType);
+        loan.setOcrScore(analysis.score);
+        loan.setAiDecision(analysis.decision);
+        loan.setDocumentAnalyzedAt(LocalDateTime.now());
+        loan.setOcrResult(normalizeOcrResult(toJson(analysis)));
+
+        Loan saved = repository.save(loan);
+        notifyLoanEvent(saved, "DOCUMENT_ANALYZED",
+                "Votre document de pret a ete analyse. Decision IA: " + saved.getAiDecision() + ".");
+        return saved;
     }
 
     private void validateCustomer(Long customerId) {
@@ -197,6 +240,38 @@ public class LoanService {
         double monthlyRate = interestRate / 100.0 / 12.0;
         double factor = Math.pow(1 + monthlyRate, durationMonths);
         return round(amount * monthlyRate * factor / (factor - 1));
+    }
+
+    private String normalizeOcrResult(String ocrResult) {
+        if (ocrResult == null || ocrResult.isBlank()) {
+            return null;
+        }
+        return ocrResult.length() <= 5000 ? ocrResult : ocrResult.substring(0, 5000);
+    }
+
+    private String normalizeDocumentType(String documentType) {
+        return documentType == null || documentType.isBlank() ? "LOAN_APPLICATION" : documentType.trim().toUpperCase();
+    }
+
+    private String toJson(DocumentAnalysisDTO analysis) {
+        try {
+            return objectMapper.writeValueAsString(analysis);
+        } catch (JsonProcessingException ex) {
+            throw new ExternalServiceException("Unable to serialize document analysis.", ex);
+        }
+    }
+
+    private void requireDocumentAnalysis(Loan loan) {
+        if (loan.getOcrResult() == null || loan.getOcrResult().isBlank()) {
+            throw new BadRequestException("A document OCR analysis is required before reviewing the loan file.");
+        }
+    }
+
+    private void validateAiDecisionBeforeApproval(Loan loan) {
+        requireDocumentAnalysis(loan);
+        if ("REJECTED".equalsIgnoreCase(loan.getAiDecision())) {
+            throw new BadRequestException("This loan file was rejected by document analysis and cannot be approved.");
+        }
     }
 
     private List<LoanScheduleEntryDTO> buildSchedule(Loan loan) {

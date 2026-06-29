@@ -2,6 +2,7 @@ package com.bankingproject.loanservice.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "loans")
@@ -32,6 +33,11 @@ public class Loan {
 
     @Column(length = 5000)
     private String ocrResult;
+
+    private String documentType;
+    private Double ocrScore;
+    private String aiDecision;
+    private LocalDateTime documentAnalyzedAt;
 
     public Long getId() {
         return id;
@@ -139,5 +145,37 @@ public class Loan {
 
     public void setOcrResult(String ocrResult) {
         this.ocrResult = ocrResult;
+    }
+
+    public String getDocumentType() {
+        return documentType;
+    }
+
+    public void setDocumentType(String documentType) {
+        this.documentType = documentType;
+    }
+
+    public Double getOcrScore() {
+        return ocrScore;
+    }
+
+    public void setOcrScore(Double ocrScore) {
+        this.ocrScore = ocrScore;
+    }
+
+    public String getAiDecision() {
+        return aiDecision;
+    }
+
+    public void setAiDecision(String aiDecision) {
+        this.aiDecision = aiDecision;
+    }
+
+    public LocalDateTime getDocumentAnalyzedAt() {
+        return documentAnalyzedAt;
+    }
+
+    public void setDocumentAnalyzedAt(LocalDateTime documentAnalyzedAt) {
+        this.documentAnalyzedAt = documentAnalyzedAt;
     }
 }
