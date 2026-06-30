@@ -13,7 +13,7 @@ public class NotificationClient {
     private final String notificationServiceUrl;
 
     public NotificationClient(RestTemplate restTemplate,
-                              @Value("${external.service.notification-url:http://localhost:8087}") String notificationServiceUrl) {
+                              @Value("${external.service.notification-url:http://localhost:8088}") String notificationServiceUrl) {
         this.restTemplate = restTemplate;
         this.notificationServiceUrl = notificationServiceUrl;
     }

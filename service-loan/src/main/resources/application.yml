@@ -1,9 +1,14 @@
 server:
-  port: 8086
+  port: 8087
 
 spring:
   application:
     name: service-loan
+  cloud:
+    config:
+      uri: http://localhost:8080
+  config:
+    import: optional:configserver:http://localhost:8080
 
   datasource:
     url: jdbc:postgresql://localhost:5433/loan_db
@@ -20,16 +25,16 @@ spring:
 external:
   service:
     account-url: http://localhost:8082
-    customer-url: http://localhost:8084
-    notification-url: http://localhost:8087
-    transaction-url: http://localhost:8085
+    customer-url: http://localhost:8085
+    notification-url: http://localhost:8088
+    transaction-url: http://localhost:8086
     ai-url: http://localhost:5000
 
 management:
   endpoints:
     web:
       exposure:
-        include: health
+        include: health,info
 
 eureka:
   client:

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.bankingproject</groupId>
+    <artifactId>banking-project-inf462</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>banking-project-inf462</name>
+    <description>Aggregator for the banking microservices project</description>
+
+    <modules>
+        <module>service-config</module>
+        <module>service-registry</module>
+        <module>auth-service</module>
+        <module>service-customer</module>
+        <module>service-account</module>
+        <module>transaction-service</module>
+        <module>service-gateway</module>
+        <module>service-loan</module>
+    </modules>
+</project>

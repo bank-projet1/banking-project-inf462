@@ -31,7 +31,7 @@ public class AccountClient {
 
     public void updateBalance(Long accountId, BigDecimal amount) {
         String url = UriComponentsBuilder
-                .fromHttpUrl(accountServiceUrl + "/accounts/update-balance")
+                .fromUriString(accountServiceUrl + "/accounts/update-balance")
                 .queryParam("accountId", accountId)
                 .queryParam("amount", amount)
                 .toUriString();

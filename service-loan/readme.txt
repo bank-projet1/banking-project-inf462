@@ -1,6 +1,6 @@
 # Service de pret
 
-Port local: 8086
+Port local: 8087
 
 ## Flux metier attendu
 
@@ -13,13 +13,13 @@ Port local: 8086
 
 ## Creer une demande de pret
 
-curl -X POST http://localhost:8086/api/loans \
+curl -X POST http://localhost:8087/api/loans \
   -H "Content-Type: application/json" \
   -d '{"customerId":1,"accountId":10,"amount":500000,"interestRate":8.5,"durationMonths":24}'
 
 ## Analyser un document du dossier de pret
 
-curl -X POST http://localhost:8086/api/loans/1/documents/analyze \
+curl -X POST http://localhost:8087/api/loans/1/documents/analyze \
   -F "documentType=SALARY" \
   -F "file=@/chemin/vers/bulletin.png"
 
@@ -27,24 +27,24 @@ Types utiles: CNI, PASSPORT, DOMICILE, SALARY, BANK_STATEMENT, CONTRACT, ADMIN, 
 
 ## Passer le dossier en revue
 
-curl -X PUT http://localhost:8086/api/loans/1/review
+curl -X PUT http://localhost:8087/api/loans/1/review
 
 Cette etape exige une analyse OCR deja enregistree sur le pret.
 
 ## Approuver ou rejeter
 
-curl -X PUT http://localhost:8086/api/loans/1/approve
-curl -X PUT http://localhost:8086/api/loans/1/reject
+curl -X PUT http://localhost:8087/api/loans/1/approve
+curl -X PUT http://localhost:8087/api/loans/1/reject
 
 Un dossier dont la decision IA vaut REJECTED ne peut pas etre approuve.
 
 ## Echeancier de remboursement
 
-curl http://localhost:8086/api/loans/1/schedule
+curl http://localhost:8087/api/loans/1/schedule
 
 ## Rembourser
 
-curl -X POST http://localhost:8086/api/loans/1/repay \
+curl -X POST http://localhost:8087/api/loans/1/repay \
   -H "Content-Type: application/json" \
   -d '{"amount":25000}'
 

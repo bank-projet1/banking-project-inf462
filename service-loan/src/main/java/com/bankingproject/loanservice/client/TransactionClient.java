@@ -17,7 +17,7 @@ public class TransactionClient {
 
     public TransactionClient(
             RestTemplate restTemplate,
-            @Value("${external.service.transaction-url:http://localhost:8085}") String transactionServiceUrl) {
+            @Value("${external.service.transaction-url:http://localhost:8086}") String transactionServiceUrl) {
         this.restTemplate = restTemplate;
         this.transactionServiceUrl = transactionServiceUrl;
     }
@@ -32,7 +32,7 @@ public class TransactionClient {
 
     private void postTransaction(String path, Long accountId, BigDecimal amount) {
         String url = UriComponentsBuilder
-                .fromHttpUrl(transactionServiceUrl + path)
+                .fromUriString(transactionServiceUrl + path)
                 .queryParam("accountId", accountId)
                 .queryParam("amount", amount)
                 .toUriString();
