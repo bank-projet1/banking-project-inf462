@@ -394,8 +394,26 @@ th {
 }
 
 .account-grid .form-panel,
-.transaction-grid .form-panel {
+.transaction-grid .form-panel,
+.document-grid .form-panel {
   grid-column: span 4;
+}
+
+.result-panel {
+  grid-column: span 8;
+}
+
+.result-panel pre {
+  min-height: 280px;
+  max-height: 520px;
+  overflow: auto;
+  margin: 14px 0 0;
+  padding: 14px;
+  border-radius: 8px;
+  background: #17201b;
+  color: #eaf6ee;
+  font-size: 0.9rem;
+  white-space: pre-wrap;
 }
 
 .toast {
@@ -443,7 +461,9 @@ th {
   .dashboard-grid .metric,
   .panel,
   .account-grid .form-panel,
-  .transaction-grid .form-panel {
+  .transaction-grid .form-panel,
+  .document-grid .form-panel,
+  .result-panel {
     grid-column: span 12;
   }
 

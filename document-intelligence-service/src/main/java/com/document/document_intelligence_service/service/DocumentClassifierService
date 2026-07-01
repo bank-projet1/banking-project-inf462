@@ -1,0 +1,150 @@
+package com.document.document_intelligence_service.service;
+
+import org.springframework.stereotype.Service;
+
+import java.util.Locale;
+
+@Service
+public class DocumentClassifierService {
+
+```
+public String classify(String text) {
+
+    if (text == null || text.isBlank()) {
+        return "UNKNOWN";
+    }
+
+    String normalized = text.toUpperCase(Locale.ROOT);
+
+    // Correction des erreurs OCR fréquentes
+    normalized = normalized
+            .replace("1DENTITY", "IDENTITY")
+            .replace("AATIONNL", "NATIONAL")
+            .replace("DADENTITÉ", "IDENTITE")
+            .replace("DADENTITE", "IDENTITE")
+            .replace("AARTEMATIANALE", "CARTE NATIONALE");
+
+    // =========================
+    // CNI CAMEROUN
+    // =========================
+    if (containsAny(normalized,
+            "REPUBLIQUE DU CAMEROUN",
+            "REPUBLIC OF CAMEROON")) {
+
+        if (containsAny(normalized,
+                "CARTE",
+                "IDENTITE",
+                "IDENTITÉ",
+                "IDENTITY CARD",
+                "NATIONAL IDENTITY CARD",
+                "CNI")) {
+
+            return "CAMEROON_CNI";
+        }
+    }
+
+    // =========================
+    // PASSEPORT
+    // =========================
+    if (containsAny(normalized,
+            "PASSEPORT",
+            "PASSPORT")) {
+
+        if (containsAny(normalized,
+                "REPUBLIQUE DU CAMEROUN",
+                "REPUBLIC OF CAMEROON")) {
+
+            return "CAMEROON_PASSPORT";
+        }
+
+        return "PASSPORT";
+    }
+
+    // =========================
+    // JUSTIFICATIF DE DOMICILE
+    // =========================
+    if (containsAny(normalized,
+            "JUSTIFICATIF DE DOMICILE",
+            "PROOF OF ADDRESS",
+            "ADDRESS PROOF",
+            "DOMICILE")) {
+
+        return "ADDRESS_PROOF";
+    }
+
+    // =========================
+    // BULLETIN DE SALAIRE
+    // =========================
+    if (containsAny(normalized,
+            "BULLETIN DE SALAIRE",
+            "PAYSLIP",
+            "PAY SLIP",
+            "PAYROLL")) {
+
+        return "PAYSLIP";
+    }
+
+    // =========================
+    // RELEVE BANCAIRE
+    // =========================
+    if (containsAny(normalized,
+            "RELEVE BANCAIRE",
+            "RELEVÉ BANCAIRE",
+            "BANK STATEMENT",
+            "STATEMENT")) {
+
+        return "BANK_STATEMENT";
+    }
+
+    // =========================
+    // CONTRAT DE TRAVAIL
+    // =========================
+    if (containsAny(normalized,
+            "CONTRAT DE TRAVAIL",
+            "EMPLOYMENT CONTRACT",
+            "WORK CONTRACT")) {
+
+        return "WORK_CONTRACT";
+    }
+
+    // =========================
+    // DOCUMENT ADMINISTRATIF
+    // =========================
+    if (containsAny(normalized,
+            "ADMINISTRATIF",
+            "ADMINISTRATIVE",
+            "ATTESTATION",
+            "CERTIFICAT",
+            "CERFA")) {
+
+        return "ADMINISTRATION_DOCUMENT";
+    }
+
+    // =========================
+    // CNI GENERIQUE
+    // =========================
+    if (containsAny(normalized,
+            "CARTE NATIONALE",
+            "IDENTITY CARD",
+            "NATIONAL IDENTITY CARD")) {
+
+        return "IDENTITY_CARD";
+    }
+
+    return "UNKNOWN";
+}
+
+private boolean containsAny(String text, String... candidates) {
+
+    for (String candidate : candidates) {
+
+        if (text.contains(candidate)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+```
+
+}

@@ -6,6 +6,7 @@ Interface React pour tester les microservices deja implementes :
 - service-customer
 - service-account
 - transaction-service
+- document-intelligence-service
 
 ## Demarrage
 
@@ -33,6 +34,7 @@ auth-service        -> 8084
 service-customer    -> 8085
 service-account     -> 8082
 transaction-service -> 8086
+document-intelligence-service -> 8087
 service-gateway     -> 8083
 frontend            -> 5173
 ```
@@ -46,6 +48,7 @@ Le frontend utilise Vite pour proxifier les appels API :
 /customer-api    -> http://localhost:8085
 /account-api     -> http://localhost:8082
 /transaction-api -> http://localhost:8086
+/document-api    -> http://localhost:8087
 /gateway-api     -> http://localhost:8083
 ```
 

@@ -10,6 +10,7 @@ Ces liens seront disponibles lorsque la dependance Springdoc OpenAPI sera ajoute
 | service-account | 8082 | http://localhost:8082/swagger-ui/index.html | http://localhost:8082/v3/api-docs |
 | service-customer | 8085 | http://localhost:8085/swagger-ui/index.html | http://localhost:8085/v3/api-docs |
 | transaction-service | 8086 | http://localhost:8086/swagger-ui/index.html | http://localhost:8086/v3/api-docs |
+| document-intelligence-service | 8087 | http://localhost:8087/swagger-ui/index.html | http://localhost:8087/v3/api-docs |
 
 Si les appels passent par API Gateway, les tests fonctionnels principaux peuvent aussi etre exposes via :
 
@@ -19,6 +20,7 @@ Si les appels passent par API Gateway, les tests fonctionnels principaux peuvent
 | service-account | http://localhost:8083/api/account/... |
 | service-customer | http://localhost:8083/api/customer/... |
 | transaction-service | http://localhost:8083/api/transactions/... |
+| document-intelligence-service | http://localhost:8083/api/documents/... |
 
 ## 2. Dependances Swagger a ajouter
 
@@ -74,6 +76,11 @@ cd transaction-service
 ./mvnw spring-boot:run
 ```
 
+```bash
+cd document-intelligence-service
+./mvnw spring-boot:run
+```
+
 3. Verifier Eureka :
 
 ```text
@@ -87,6 +94,7 @@ AUTH-SERVICE
 SERVICE-CUSTOMER
 SERVICE-ACCOUNT
 TRANSACTION-SERVICE
+DOCUMENT-INTELLIGENCE-SERVICE
 ```
 
 ## 4. auth-service - Port 8084
@@ -394,7 +402,82 @@ Cette route supprime l'enregistrement transactionnel. Elle ne restaure pas autom
 DELETE http://localhost:8086/api/transactions/1
 ```
 
-## 8. Scenario de test complet recommande
+## 8. document-intelligence-service - Port 8087
+
+Role : analyse OCR/IA des documents clients, detection du type de document, extraction de champs et verification basique.
+
+### POST - analyser un document
+
+Cette route recoit un fichier en `multipart/form-data`. Elle sert par exemple a analyser une CNI camerounaise, un passeport, un justificatif de domicile, une fiche de paie, un releve bancaire ou un contrat de travail.
+
+```http
+POST http://localhost:8087/api/documents/analyze
+Content-Type: multipart/form-data
+```
+
+Champs `form-data` Postman :
+
+```text
+file: fichier image ou PDF a analyser
+documentType: CAMEROON_CNI
+```
+
+Le champ `documentType` est optionnel. Si on ne l'envoie pas, le service essaie de classifier automatiquement le document.
+
+Exemple `curl` :
+
+```bash
+curl -X POST http://localhost:8087/api/documents/analyze \
+  -F "file=@cameroon_cni_test.png" \
+  -F "documentType=CAMEROON_CNI"
+```
+
+Exemple via API Gateway :
+
+```bash
+curl -X POST http://localhost:8083/api/documents/analyze \
+  -F "file=@cameroon_cni_test.png" \
+  -F "documentType=CAMEROON_CNI"
+```
+
+Reponse attendue :
+
+```json
+{
+  "documentType": "CAMEROON_CNI",
+  "documentStatus": "VALID",
+  "country": "Cameroon",
+  "countryCode": "CM",
+  "idNumber": "123456789",
+  "surname": "NOM",
+  "givenNames": "PRENOMS",
+  "faceDetected": true,
+  "faceCount": 1,
+  "extractedFields": {},
+  "verificationResults": {},
+  "processingNotes": "OCR and document intelligence analysis completed."
+}
+```
+
+Les valeurs exactes dependent de la qualite du fichier envoye et de ce que l'OCR reussit a lire.
+
+### Erreurs possibles
+
+```json
+{
+  "error": "ocr_processing_failure",
+  "message": "Unable to process uploaded document"
+}
+```
+
+```json
+{
+  "error": "file_too_large",
+  "message": "Uploaded file exceeds the maximum allowed size."
+}
+```
+
+## 9. Scenario de test complet recommande
 
 1. Creer un utilisateur dans `auth-service`.
 2. Se connecter et recuperer le JWT.
@@ -407,8 +490,9 @@ DELETE http://localhost:8086/api/transactions/1
 9. Verifier encore le solde.
 10. Faire un transfert entre deux comptes.
 11. Consulter l'historique des transactions.
+12. Analyser une piece d'identite avec `document-intelligence-service`.
 
-## 9. Erreurs frequentes
+## 10. Erreurs frequentes
 
 ### Erreur 503 dans transaction-service
 

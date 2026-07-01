@@ -26,6 +26,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/transaction-api/, "")
       },
+      "/document-api": {
+        target: "http://localhost:8087",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/document-api/, "")
+      },
       "/gateway-api": {
         target: "http://localhost:8083",
         changeOrigin: true,

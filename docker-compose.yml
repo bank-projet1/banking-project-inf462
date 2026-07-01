@@ -28,5 +28,19 @@ services:
       timeout: 5s
       retries: 5
 
+  customer1:
+    build: ./service-customer
+    container_name: customer1
+    ports:
+      - "8085:8085"
+
+  customer2:
+    build: ./service-customer
+    container_name: customer2
+
+  customer3:
+    build: ./service-customer
+    container_name: customer3
+
 volumes:
   banking_postgres_data:

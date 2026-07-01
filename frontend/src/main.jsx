@@ -7,6 +7,7 @@ const API = {
   customer: "/customer-api",
   account: "/account-api",
   transaction: "/transaction-api",
+  document: "/document-api",
   gateway: "/gateway-api"
 };
 
@@ -143,6 +144,7 @@ function App() {
             ["accounts", "Comptes"],
             ["transactions", "Transactions"],
             ["history", "Historique"],
+            ["documents", "Documents"],
             ["admin", "Administration"]
           ].map(([key, label]) => (
             <button
@@ -238,6 +240,10 @@ function App() {
           />
         )}
 
+        {activeView === "documents" && (
+          <DocumentView safeRun={safeRun} />
+        )}
+
         {activeView === "admin" && (
           <AdminView users={users} setUsers={setUsers} safeRun={safeRun} notify={notify} />
         )}
@@ -254,6 +260,7 @@ function titleFor(view) {
     accounts: "Gestion des comptes",
     transactions: "Operations transactionnelles",
     history: "Historique des transactions",
+    documents: "Analyse OCR et documents",
     admin: "Gestion des utilisateurs"
   }[view];
 }
@@ -734,6 +741,64 @@ function AdminView({ users, setUsers, safeRun }) {
             />
           ]}
         />
+      </div>
+    </section>
+  );
+}
+
+function DocumentView({ safeRun }) {
+  const [file, setFile] = useState(null);
+  const [documentType, setDocumentType] = useState("CAMEROON_CNI");
+  const [analysis, setAnalysis] = useState(null);
+
+  const analyze = async (event) => {
+    event.preventDefault();
+    if (!file) {
+      await safeRun(() => Promise.reject(new Error("Selectionne d'abord une image ou un document.")));
+      return;
+    }
+
+    const body = new FormData();
+    body.append("file", file);
+    if (documentType) body.append("documentType", documentType);
+
+    const result = await safeRun(async () => {
+      const response = await fetch(`${API.document}/api/documents/analyze`, {
+        method: "POST",
+        body
+      });
+      const contentType = response.headers.get("content-type") || "";
+      const data = contentType.includes("application/json") ? await response.json() : await response.text();
+      if (!response.ok) {
+        const message = typeof data === "string" ? data : data.message || data.error || "Erreur OCR";
+        throw new Error(message);
+      }
+      return data;
+    }, "Document analyse avec succes");
+
+    if (result) setAnalysis(result);
+  };
+
+  return (
+    <section className="grid document-grid">
+      <form className="panel form-panel" onSubmit={analyze}>
+        <h2>Analyser un document</h2>
+        <label className="field">
+          <span>Fichier</span>
+          <input type="file" accept="image/*,.pdf" onChange={(event) => setFile(event.target.files?.[0] || null)} />
+        </label>
+        <Select
+          label="Type de document"
+          value={documentType}
+          options={["CAMEROON_CNI", "CAMEROON_PASSPORT", "PASSPORT", "IDENTITY_CARD", "BANK_STATEMENT", "UNKNOWN"]}
+          onChange={setDocumentType}
+        />
+        <button className="primary">Lancer l'analyse OCR</button>
+      </form>
+
+      <div className="panel result-panel">
+        <h2>Resultat de l'analyse</h2>
+        <pre>{analysis ? JSON.stringify(analysis, null, 2) : "Aucun document analyse pour le moment."}</pre>
       </div>
     </section>
   );
