@@ -1,15 +1,14 @@
 package com.example.transaction_service.service;
 
-import com.example.transaction_service.client.AccountClient;
+import com.example.transaction_service.event.TransactionEventPublisher;
 import com.example.transaction_service.model.Transaction;
 import com.example.transaction_service.model.TransactionType;
 import com.example.transaction_service.repository.TransactionRepository;
+import com.example.transaction_service.strategy.TransactionStrategyResolver;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,47 +16,37 @@ import java.util.Optional;
 public class TransactionService {
 
     private final TransactionRepository transactionRepository;
-    private final AccountClient accountClient;
+    private final TransactionStrategyResolver strategyResolver;
+    private final TransactionEventPublisher eventPublisher;
 
-    public TransactionService(TransactionRepository transactionRepository, AccountClient accountClient) {
+    public TransactionService(TransactionRepository transactionRepository,
+                               TransactionStrategyResolver strategyResolver,
+                               TransactionEventPublisher eventPublisher) {
         this.transactionRepository = transactionRepository;
-        this.accountClient = accountClient;
+        this.strategyResolver = strategyResolver;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
     public Transaction deposit(Long accountId, BigDecimal amount) {
-        Transaction transaction = new Transaction(null, accountId, amount, TransactionType.DEPOSIT, LocalDateTime.now());
-        Transaction savedTransaction = transactionRepository.save(transaction);
-
-        // Appele le microservice compte pour ajouter l'argent
-        accountClient.updateBalance(accountId, amount);
-
-        return savedTransaction;
+        Transaction saved = strategyResolver.resolve(TransactionType.DEPOSIT).execute(null, accountId, amount);
+        eventPublisher.publishCreated(saved);
+        return saved;
     }
 
     @Transactional
     public Transaction withdrawal(Long accountId, BigDecimal amount) {
-        Transaction transaction = new Transaction(accountId, null, amount, TransactionType.WITHDRAWAL, LocalDateTime.now());
-        Transaction savedTransaction = transactionRepository.save(transaction);
-
-        // Appele le microservice compte pour retirer l'argent (montant négatif)
-        accountClient.updateBalance(accountId, amount.negate());
-
-        return savedTransaction;
+        Transaction saved = strategyResolver.resolve(TransactionType.WITHDRAWAL).execute(accountId, null, amount);
+        eventPublisher.publishCreated(saved);
+        return saved;
     }
 
     @Transactional
     public Transaction transfer(Long sourceAccountId, Long destinationAccountId, BigDecimal amount) {
-        Transaction transaction = new Transaction(sourceAccountId, destinationAccountId, amount, TransactionType.TRANSFER, LocalDateTime.now());
-        Transaction savedTransaction = transactionRepository.save(transaction);
-
-        // 1. Débiter le compte source (montant négatif)
-        accountClient.updateBalance(sourceAccountId, amount.negate());
-
-        // 2. Créditer le compte destination (montant positif)
-        accountClient.updateBalance(destinationAccountId, amount);
-
-        return savedTransaction;
+        Transaction saved = strategyResolver.resolve(TransactionType.TRANSFER)
+                .execute(sourceAccountId, destinationAccountId, amount);
+        eventPublisher.publishCreated(saved);
+        return saved;
     }
 
     public List<Transaction> getAccountHistory(Long accountId) {
@@ -74,16 +63,14 @@ public class TransactionService {
 
     @Transactional
     public Transaction updateTransaction(Long id, Transaction transaction) {
-        Transaction existingTransaction = transactionRepository.findById(id)
+        Transaction existing = transactionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Transaction not found"));
-
-        existingTransaction.setSourceAccountId(transaction.getSourceAccountId());
-        existingTransaction.setDestinationAccountId(transaction.getDestinationAccountId());
-        existingTransaction.setAmount(transaction.getAmount());
-        existingTransaction.setType(transaction.getType());
-        existingTransaction.setTimestamp(transaction.getTimestamp() == null ? existingTransaction.getTimestamp() : transaction.getTimestamp());
-
-        return transactionRepository.save(existingTransaction);
+        existing.setSourceAccountId(transaction.getSourceAccountId());
+        existing.setDestinationAccountId(transaction.getDestinationAccountId());
+        existing.setAmount(transaction.getAmount());
+        existing.setType(transaction.getType());
+        existing.setTimestamp(transaction.getTimestamp() == null ? existing.getTimestamp() : transaction.getTimestamp());
+        return transactionRepository.save(existing);
     }
 
     @Transactional
@@ -91,7 +78,6 @@ public class TransactionService {
         if (!transactionRepository.existsById(id)) {
             throw new RuntimeException("Transaction not found");
         }
-
         transactionRepository.deleteById(id);
     }
 }
